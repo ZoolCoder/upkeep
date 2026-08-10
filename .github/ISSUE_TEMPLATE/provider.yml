@@ -1,0 +1,37 @@
+name: Provider request
+description: A platform upkeep should be able to reconcile
+labels: [provider]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The most useful contribution to this project is a provider for a
+        platform you actually deploy to. See
+        [adding a provider](../blob/main/docs/modules/ROOT/pages/extending.adoc)
+        — it is one package and three small edits.
+
+  - type: input
+    id: platform
+    attributes:
+      label: Which platform
+      placeholder: Fly.io, Railway, Vercel, Supabase, S3…
+    validations: { required: true }
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What should it reconcile
+      description: >-
+        Which settings drift, and what breaks when they do. The failure matters
+        more than the field list — upkeep exists for settings whose absence is
+        an error nowhere.
+    validations: { required: true }
+
+  - type: textarea
+    id: manual
+    attributes:
+      label: What could it never do
+      description: >-
+        Credentials only a dashboard can mint, values only a human knows. These
+        become MANUAL actions, and getting them right is most of a provider's
+        value.

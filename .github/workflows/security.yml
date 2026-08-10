@@ -1,0 +1,38 @@
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # A vulnerability in a dependency arrives without a commit, so a scan that
+    # only runs on push finds it whenever someone next happens to push.
+    - cron: "0 7 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: go
+      - uses: github/codeql-action/autobuild@v3
+      - uses: github/codeql-action/analyze@v3
+
+  vulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+      # govulncheck reports only vulnerabilities on a code path this binary
+      # actually reaches, so a finding here is a real one rather than a
+      # dependency-tree advisory to triage.
+      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...

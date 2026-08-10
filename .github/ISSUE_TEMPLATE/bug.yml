@@ -1,0 +1,50 @@
+name: Bug report
+description: Something upkeep did that it should not have, or did not do that it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If this is a security problem, please do not file it here — see
+        [SECURITY.md](../blob/main/SECURITY.md) for private reporting.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran and what it did.
+      placeholder: |
+        $ upkeep plan
+        …
+
+        Please redact real service ids and account ids — upkeep never prints
+        values, but the surrounding context may name your infrastructure.
+    validations: { required: true }
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations: { required: true }
+
+  - type: textarea
+    id: config
+    attributes:
+      label: The relevant part of your config
+      description: >-
+        Placeholders are fine and preferred. `upkeep validate` output helps too.
+      render: yaml
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "`upkeep version`"
+    validations: { required: true }
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface
+      multiple: true
+      options: [render, r2, pages, dns, neon, auth, "the CLI itself", "not sure"]

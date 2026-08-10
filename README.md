@@ -1,5 +1,9 @@
 # upkeep
 
+[![ci](https://github.com/ZoolCoder/upkeep/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoolCoder/upkeep/actions/workflows/ci.yml)
+[![go reference](https://pkg.go.dev/badge/github.com/zoolcoder/upkeep.svg)](https://pkg.go.dev/github.com/zoolcoder/upkeep)
+[![licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+
 One file describes what an app's cloud footprint should be. `upkeep` reads
 what it actually is, prints the difference, and — only if you ask — closes it.
 
@@ -165,6 +169,11 @@ which is the more useful half.
 See [CONTRIBUTING.md](CONTRIBUTING.md). Everything runs offline; CI has no
 credentials configured on purpose, so a fork can be tested without being
 trusted.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) — including what is deliberately *not* in scope,
+which is the more useful half.
 
 ## Licence
 
