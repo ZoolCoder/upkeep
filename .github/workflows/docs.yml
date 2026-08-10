@@ -1,0 +1,60 @@
+name: docs
+
+on:
+  push:
+    branches: [main]
+  # So a pull request finds a broken xref or a bad attribute reference before
+  # it reaches the published site.
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Antora reads the content from git, not the worktree, so a shallow
+          # clone gives it nothing to build.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npx --yes antora@3 antora-playbook.yml
+
+      # A warning here is a broken xref or an attribute that renders as
+      # nothing, and both look fine locally. Fail rather than publish it.
+      - name: Fail on any Antora warning
+        run: |
+          npx --yes antora@3 antora-playbook.yml 2>&1 | tee /tmp/antora.log
+          if grep -q '"level":"warn"' /tmp/antora.log; then
+            echo "::error::Antora emitted warnings — see the log above"
+            exit 1
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/site
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

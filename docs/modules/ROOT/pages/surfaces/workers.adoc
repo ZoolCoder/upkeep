@@ -1,0 +1,48 @@
+= Cloudflare Workers
+
+A backend that is a Worker rather than a container. `upkeep` manages the two
+things about one that break quietly.
+
+[source,yaml]
+----
+workers:
+  accountId: ${CLOUDFLARE_ACCOUNT_ID}
+  script: my-api
+  zoneId: 0000000000000000000000000000000000   # only needed for routes
+  secrets:
+    - key: SOME_SECRET_KEY
+      valueEnv: SOME_SECRET_KEY
+  routes:
+    - example.com/api/*
+----
+
+== Secrets
+
+A secret the script expects and the account does not have: the Worker deploys,
+serves most requests, and one code path throws. That is the failure this whole
+tool was written after, in Worker form.
+
+Like xref:surfaces/fly.adoc[Fly], Cloudflare returns a secret's *name* and never
+its value, so an existing secret is passed over in silence rather than reported
+as matching.
+
+== Routes
+
+Three states, and the third is the one worth knowing about.
+
+Missing:: Traffic reaches the zone's normal handling instead, so the site
+"works" and one path is served by something else entirely.
+
+Pointing at another script:: The route *exists*, so nothing looks missing at
+all, and someone else's Worker is answering your path. `upkeep` names which
+script is answering.
+
+Not declared here:: Reported and never removed. A live route has traffic behind
+it. Routes belonging to a *different* script on the same zone are ignored
+entirely — they are not this app's business.
+
+== What is not managed
+
+The script itself. Uploading a Worker is `wrangler deploy` — bundling, source
+maps, migrations — and reimplementing that to own one more field would be a
+worse tool, not a more complete one.

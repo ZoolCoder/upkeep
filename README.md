@@ -3,6 +3,7 @@
 [![ci](https://github.com/ZoolCoder/upkeep/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoolCoder/upkeep/actions/workflows/ci.yml)
 [![go reference](https://pkg.go.dev/badge/github.com/zoolcoder/upkeep.svg)](https://pkg.go.dev/github.com/zoolcoder/upkeep)
 [![licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+[![docs](https://img.shields.io/badge/docs-zoolcoder.github.io%2Fupkeep-informational)](https://zoolcoder.github.io/upkeep)
 
 One file describes what an app's cloud footprint should be. `upkeep` reads
 what it actually is, prints the difference, and — only if you ask — closes it.
@@ -144,6 +145,17 @@ So CI can gate on drift:
 
 ```console
 $ upkeep plan -exit-code -json > plan.json
+```
+
+## Documentation
+
+The full manual is at **https://zoolcoder.github.io/upkeep** — getting started,
+a page per surface, the threat model, and how it differs from Terraform.
+
+Build it locally:
+
+```console
+npx antora antora-playbook.yml && open build/site/index.html
 ```
 
 ## Developing

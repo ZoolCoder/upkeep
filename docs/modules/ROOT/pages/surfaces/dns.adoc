@@ -1,0 +1,38 @@
+= Cloudflare DNS
+
+The handful of records a site needs in order to exist. Deliberately not a zone
+manager.
+
+[source,yaml]
+----
+dns:
+  zoneId: 0000000000000000000000000000000000
+  records:
+    - type: CNAME
+      name: www.example.com
+      content: my-app.pages.dev
+      proxied: true
+    - type: TXT
+      name: _verify.example.com
+      content: some-verification-token
+      ttl: 300
+----
+
+== It never plans a deletion
+
+A DNS record is the one thing `upkeep` touches that can take a site off the
+internet by being removed. Records this config does not declare are reported and
+left alone, and there is a test asserting no `DELETE` is ever planned.
+
+== What is compared
+
+Only the fields `upkeep` sets. Cloudflare computes others, and treating those as
+drift would offer the same change forever.
+
+`proxied` left unset means the zone's own choice stands rather than `upkeep`
+asserting one. A record is identified by type *and* name, matched
+case-insensitively, so declaring the same pair twice is refused at parse time —
+two intentions for one record, and no way to know which wins.
+
+`ttl` omitted means Cloudflare's automatic, which is `1`. Anything below 60 is
+refused, because Cloudflare will reject it.

@@ -1,0 +1,57 @@
+= Cloudflare R2
+
+A bucket and the two settings that decide whether a browser can actually use it.
+Both are invisible from the application's side.
+
+[source,yaml]
+----
+r2:
+  accountId: ${CLOUDFLARE_ACCOUNT_ID}
+  bucket: my-bucket
+  public: true
+  cors:
+    - origins: [https://my-app.example.com, http://localhost:5173]
+      methods: [PUT]
+      headers: [content-type, cache-control]
+      maxAgeSeconds: 3600
+----
+
+== Public access
+
+A bucket with public access off still accepts uploads and then serves nothing.
+Photos upload successfully and render as broken images — a failure that looks
+like an upload bug and is not.
+
+== CORS
+
+The one that costs the most time when it is wrong.
+
+For a presigned upload the browser PUTs *straight to the bucket*, not through
+your backend, so the bucket decides whether the request may leave the page at
+all. With no rule, or the wrong one, the request never leaves and the error your
+app sees is indistinguishable from a bad credential.
+
+[IMPORTANT]
+====
+`headers` must list every header the client sends — which for a presigned PUT
+means every header *in the signature*. A signed header the preflight refuses
+fails as `SignatureDoesNotMatch`, an error that names nothing and reads exactly
+like a bad access key.
+
+If your presign sets `Cache-Control` as well as `Content-Type`, both belong
+here.
+====
+
+Differences are reported as what moved, not as the whole desired rule:
+
+[source,console]
+----
+UPDATE  r2-cors  my-bucket  differs from the config: +header cache-control
+----
+
+Against a rule with four origins and six headers, restating the destination
+leaves you to spot the difference yourself, and nobody does.
+
+Order and case are normalised before comparing. R2 returns what it stores in its
+own order and lowercases header names; a rule that read as different forever
+would be one people learn to ignore.

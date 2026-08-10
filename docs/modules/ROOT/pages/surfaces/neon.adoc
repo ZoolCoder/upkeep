@@ -1,0 +1,32 @@
+= Neon
+
+The database behind the app. Read-only.
+
+[source,yaml]
+----
+neon:
+  projectId: ${NEON_PROJECT_ID}
+  branch: main
+  databaseUrlEnv: DATABASE_URL
+----
+
+== It plans no writes
+
+A database is not a thing to converge silently. `upkeep` will not create a
+branch, will not delete one, and will not repoint a running service at another
+database — the transport itself only ever issues GETs, and a test asserts that.
+
+== What it checks
+
+The branch exists:: A service quietly pointing at a deleted branch is the
+failure this catches.
+
+`DATABASE_URL` agrees:: The service's value is compared against
+`$DATABASE_URL` in your environment. *Neither value is printed* — which one is
+right is a judgement about live data, and this tool does not make it. A
+difference becomes a `MANUAL` line saying they disagree, and nothing more.
+
+== Credentials
+
+`NEON_API_KEY`, or the session `neonctl auth` stored in
+`~/.config/neonctl/credentials.json`.

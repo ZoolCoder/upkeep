@@ -1,7 +1,19 @@
 * xref:index.adoc[What upkeep is]
+* xref:getting-started.adoc[Getting started]
 * xref:install.adoc[Install and credentials]
 * xref:configuration.adoc[Writing a config]
 * xref:commands.adoc[Commands]
+
+* Surfaces
+** xref:surfaces/render.adoc[Render]
+** xref:surfaces/fly.adoc[Fly.io]
+** xref:surfaces/workers.adoc[Cloudflare Workers]
+** xref:surfaces/r2.adoc[Cloudflare R2]
+** xref:surfaces/pages.adoc[Cloudflare Pages]
+** xref:surfaces/dns.adoc[Cloudflare DNS]
+** xref:surfaces/neon.adoc[Neon]
+** xref:surfaces/auth.adoc[Authentication]
+
 * xref:security.adoc[Sensitive values and threat model]
 * xref:comparison.adoc[How it differs from Terraform]
 * xref:extending.adoc[Adding a provider]
