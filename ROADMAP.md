@@ -18,6 +18,7 @@ produced this tool, not by how interesting it is to build.
 - [x] Cloudflare R2: bucket, public access, CORS
 - [x] Cloudflare Pages: production branch, domain reporting
 - [x] Cloudflare DNS: the records a site needs, never removing one it did not declare
+- [x] Cloudflare Workers: secrets and routes, for a backend that is a Worker
 - [x] Neon: branch exists, `DATABASE_URL` agreement
 - [x] Auth: the variables checked against each other, and the keys actually fetched
 
@@ -62,9 +63,8 @@ and until it has, that is what the roadmap says.
 **Railway.**
 The other common alternative for this shape of product.
 
-**Workers.**
-Routes, bindings and secrets, for products whose backend is a Worker rather than
-a container.
+**Worker bindings.**
+KV, R2, D1 and queue bindings, which today live only in `wrangler.jsonc`.
 
 **More resolvers.**
 HashiCorp Vault, and Azure Key Vault. Each is one small type behind the existing

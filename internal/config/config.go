@@ -14,14 +14,40 @@ type Config struct {
 
 // App is everything one deployed product occupies.
 type App struct {
-	Name   string  `yaml:"name"`
-	Render *Render `yaml:"render"`
-	R2     *R2     `yaml:"r2"`
-	Pages  *Pages  `yaml:"pages"`
-	Neon   *Neon   `yaml:"neon"`
-	DNS    *DNS    `yaml:"dns"`
-	Auth   *Auth   `yaml:"auth"`
-	Fly    *Fly    `yaml:"fly"`
+	Name    string   `yaml:"name"`
+	Render  *Render  `yaml:"render"`
+	R2      *R2      `yaml:"r2"`
+	Pages   *Pages   `yaml:"pages"`
+	Neon    *Neon    `yaml:"neon"`
+	DNS     *DNS     `yaml:"dns"`
+	Auth    *Auth    `yaml:"auth"`
+	Fly     *Fly     `yaml:"fly"`
+	Workers *Workers `yaml:"workers"`
+}
+
+// Workers is a Cloudflare Worker: the two things about one that break quietly.
+//
+// A secret the script expects and the account does not have — the Worker
+// deploys, serves most requests, and one code path throws. And a route it
+// should answer on and does not, so traffic reaches the zone's normal handling
+// and the site "works" with one path belonging to someone else.
+//
+// The script itself is not managed. Uploading a Worker is `wrangler deploy`,
+// which does bundling, source maps and migrations; reimplementing that to own
+// one more field would be a worse tool, not a more complete one.
+type Workers struct {
+	AccountID string `yaml:"accountId"`
+	Script    string `yaml:"script"`
+	// ZoneID is required only when routes are declared.
+	ZoneID string `yaml:"zoneId"`
+	// Secrets uses the same shape as everywhere else, so a value that must not
+	// be committed names its source rather than carrying it. Cloudflare returns
+	// a secret's NAME and never its value, so upkeep reports one missing and
+	// says nothing about one that exists.
+	Secrets []EnvVar `yaml:"secrets"`
+	// Routes the script should answer. Routes upkeep did not declare are
+	// reported and never removed: a live route has traffic behind it.
+	Routes []string `yaml:"routes"`
 }
 
 // Fly is an app on Fly.io — the second place a backend can run, and the test of
