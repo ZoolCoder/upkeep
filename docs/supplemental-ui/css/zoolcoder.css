@@ -14,7 +14,11 @@
 
   --zc-ink: #e8eaf0;
   --zc-ink-soft: #9aa0b0;
-  --zc-ink-faint: #6b7080;
+  /* 4.06:1 against the page at #6b7080, which fails WCAG AA — and it is used
+     on small uppercase labels, where nothing about the size earns the lower
+     threshold. #7b8192 clears it at 5.15:1 without becoming a third body
+     colour. */
+  --zc-ink-faint: #7b8192;
 
   --zc-primary: #2dd4bf;
   --zc-accent: #22d3ee;
