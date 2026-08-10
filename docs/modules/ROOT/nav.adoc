@@ -1,0 +1,7 @@
+* xref:index.adoc[What upkeep is]
+* xref:install.adoc[Install and credentials]
+* xref:configuration.adoc[Writing a config]
+* xref:commands.adoc[Commands]
+* xref:security.adoc[Sensitive values and threat model]
+* xref:comparison.adoc[How it differs from Terraform]
+* xref:extending.adoc[Adding a provider]

@@ -1,0 +1,14 @@
+# Build the docs site:
+#   npx antora antora-playbook.yml && open build/site/index.html
+site:
+  title: upkeep
+  start_page: upkeep::index.adoc
+content:
+  sources:
+    - url: .
+      start_path: docs
+      branches: HEAD
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true

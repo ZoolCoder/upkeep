@@ -1,0 +1,54 @@
+= How it differs from Terraform
+
+`upkeep` borrows Terraform's shape — declare, plan, apply — and departs from it
+deliberately in three places.
+
+== It keeps no state
+
+Terraform records what it created, which is what lets it delete a resource you
+removed from the config. `upkeep` records nothing.
+
+The consequence is the point: *it never deletes by omission*. A variable the
+config does not name is left exactly as it is, forever. A Render service carries
+variables its own platform set; a bucket may have settings nobody wrote down.
+Managing only what is named means a mistake in a config file cannot take a
+production service down.
+
+The cost is real and worth stating plainly: removing a key from the config does
+not remove it from the service. You do that yourself, deliberately.
+
+There is also nothing to lock, nothing to corrupt, nothing to migrate between
+versions, and no shared backend to set up before the first run.
+
+== It has a fourth verb
+
+`CREATE`, `UPDATE`, `DELETE` — and `MANUAL`, for changes no tool can make. An R2
+API token cannot be minted from any CLI. Real bank details are nobody's to
+invent.
+
+Terraform's answer to this is to fail, or to leave the value out of the config
+entirely and hope somebody remembers. `upkeep` prints it every run until it is
+done, so a half-built deployment cannot pass for a finished one.
+
+== apply verifies
+
+Terraform trusts its providers to report accurately. `upkeep` re-reads live
+state after applying and fails if a change is not actually in place, because
+every failure this tool was written after looked like success at the moment it
+happened.
+
+== What it borrows unchanged
+
+* `plan` then `apply`, with a saved plan so you apply exactly what you reviewed
+* `validate` for an offline config check
+* a non-zero exit code for drift, so CI can gate on it
+* `import` from live state
+* providers behind an interface, so a new one is additive
+
+== When to use Terraform instead
+
+`upkeep` deliberately covers a narrow band: the cloud footprint of a website or
+SaaS app — a service's environment, a bucket, a static site project, a database
+branch. If you are provisioning VPCs, IAM policies, Kubernetes clusters, or
+anything where creation order and dependency graphs matter, use Terraform. It is
+a graph engine; this is not.

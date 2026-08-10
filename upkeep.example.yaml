@@ -1,0 +1,125 @@
+# upkeep configuration. Copy to upkeep.yaml and edit.
+#
+# Every value below is a placeholder. `upkeep import` writes a real one for
+# you from live state — see the bottom of this file.
+#
+# String values may reference environment variables with dollar-brace syntax;
+# an unset variable is an error, never an empty string.
+#
+# The rule that matters: a value written here is one that is safe to read in a
+# repository. A secret names the local variable it comes from instead, so the
+# value passes through memory and appears in no file, no plan, and no terminal.
+version: 1
+
+apps:
+  # One entry per deployed product. Every section is optional — declare the
+  # surfaces this app actually occupies and leave the rest out.
+  - name: my-app
+
+    render:
+      serviceId: srv-000000000000000000
+      # What `upkeep apply -deploy` ships. Omit to reconcile only the
+      # environment and never restart the service.
+      image: ghcr.io/example/my-app-backend:latest
+
+      env:
+        # --- not secret, so the value lives here ---
+        - key: SOME_BUCKET
+          value: my-bucket
+
+        # --- secret: the value comes from the local environment at apply time
+        #     and is never written to this file or printed in a plan ---
+        - key: SOME_SECRET_KEY
+          valueEnv: SOME_SECRET_KEY
+
+        # --- nobody's to invent: reported as MANUAL every run until it is set,
+        #     with `why` shown to whoever reads the plan ---
+        - key: SOME_REAL_WORLD_VALUE
+          manual: true
+          why: >-
+            real bank details / a credential only a dashboard can mint. Say
+            here exactly what a human should do.
+
+    r2:
+      accountId: ${CLOUDFLARE_ACCOUNT_ID}
+      bucket: my-bucket
+      # Serve objects on the bucket's r2.dev hostname.
+      public: true
+      cors:
+        # Only needed when a browser talks to the bucket directly — a presigned
+        # upload, for instance. The bucket, not your backend, decides whether
+        # that request is allowed to leave the page.
+        #
+        # headers must list every header the client sends. For a presigned PUT
+        # that means every header in the signature: a signed header the
+        # preflight refuses fails as SignatureDoesNotMatch, an error that names
+        # nothing and reads exactly like a bad access key.
+        - origins:
+            - https://my-app.example.com
+            - http://localhost:5173
+          methods: [PUT]
+          headers: [content-type, cache-control]
+          maxAgeSeconds: 3600
+
+    pages:
+      accountId: ${CLOUDFLARE_ACCOUNT_ID}
+      project: my-app
+      # A preview deployment is a different origin, and an exact CORS or
+      # allowlist match refuses it.
+      productionBranch: main
+      domains:
+        - my-app.pages.dev
+
+    dns:
+      # The handful of records the site needs to exist. Not a zone manager:
+      # records not listed here are reported and never removed.
+      zoneId: 0000000000000000000000000000000000
+      records:
+        - type: CNAME
+          name: www.example.com
+          content: my-app.pages.dev
+          proxied: true
+        - type: TXT
+          name: _verify.example.com
+          content: some-verification-token
+          ttl: 300
+
+    auth:
+      # The one surface that checks variables against each other rather than
+      # against a provider — because authentication fails when two values
+      # disagree, not when one is missing, and nothing else notices.
+      #
+      # upkeep reports and never changes any of it: a wrong automatic fix here
+      # locks out everybody, including whoever ran the tool.
+      #
+      # What the frontend was BUILT with. It is baked into the bundle and
+      # cannot be read back, so declaring it is the only way to check the two
+      # halves agree.
+      frontendProvider: local
+      # Probed, because the usual failure is a URL that lost its path and now
+      # 404s — which a client reads as "no session", so every sign-in appears
+      # to succeed and then not to have happened.
+      frontendAuthUrl: https://api.example.com/auth
+      # Each must appear in the service's CORS_ORIGINS. The match is exact, so
+      # a hostname that is nearly right is entirely wrong.
+      siteOrigins:
+        - https://my-app.example.com
+
+    neon:
+      projectId: ${NEON_PROJECT_ID}
+      branch: main
+      # Compared against the service's DATABASE_URL. Neither value is printed,
+      # and upkeep will not repoint a running service at another database.
+      databaseUrlEnv: DATABASE_URL
+
+# Writing one of these by hand is how a config ends up describing an app that
+# does not exist. Read it off the live account instead:
+#
+#   upkeep import -name my-app \
+#     -render srv-000000000000000000 \
+#     -bucket my-bucket \
+#     -pages my-app
+#
+# Every flag is optional; it imports the surfaces you name. Secrets come back as
+# valueEnv entries with no value, because the tool will not copy a live secret
+# into a file.

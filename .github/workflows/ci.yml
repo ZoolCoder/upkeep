@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: true
+
+      # No cloud credentials are configured for this job on purpose. Every test
+      # runs against a fake, so a pull request from a fork can be tested
+      # without handing it access to anything.
+      - run: make lint
+      - run: make test
+      - run: make race
+      - run: make build

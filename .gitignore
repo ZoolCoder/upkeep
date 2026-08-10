@@ -1,0 +1,13 @@
+# The live config. It holds no secrets by design — every secret names a local
+# variable instead — but it names real service and account ids, and each app
+# keeps its own.
+upkeep.yaml
+# The pre-rename name, kept so a stale copy cannot come back. A trailing
+# comment would NOT be a comment here — # only starts one at the beginning of
+# a line — so this pattern gets its own line.
+deployctl.yaml
+
+# Antora output and the built binary
+build/
+upkeep
+coverage.out

@@ -1,0 +1,62 @@
+= Install and credentials
+
+== Install
+
+[source,console]
+----
+$ go install github.com/zoolcoder/upkeep/cmd/upkeep@latest
+----
+
+Or from a clone:
+
+[source,console]
+----
+$ make build && ./upkeep version
+----
+
+== Credentials
+
+Every provider reuses the session its own CLI already stored. On a machine where
+`render`, `wrangler` and `neonctl` work, `upkeep` works, with no second
+credential to create or keep.
+
+[cols="1,2"]
+|===
+| Variable | Falls back to
+
+| `RENDER_API_KEY`
+| `~/.render/cli.yaml`, after `render login`
+
+| `CLOUDFLARE_API_TOKEN`
+| wrangler's config, after `wrangler login`
+
+| `NEON_API_KEY`
+| `~/.config/neonctl/credentials.json`, after `neonctl auth`
+|===
+
+A surface whose credential is missing is *reported*, never skipped silently:
+
+[source,console]
+----
+MANUAL  r2-bucket  my-bucket  no credential for this provider; set CLOUDFLARE_API_TOKEN
+----
+
+Refusing to run without every credential is how a tool gets used once and then
+worked around. Reporting the gap lets you do the half you can.
+
+=== Expired borrowed sessions
+
+A borrowed OAuth session eventually lapses. `upkeep` checks the expiry rather
+than discovering it as a `401`, which reads like a permissions problem and sends
+people to their account settings:
+
+[source,console]
+----
+cloudflare: wrangler's session expired at 2026-08-09T19:51:56+02:00 — run `wrangler login`, or set CLOUDFLARE_API_TOKEN
+----
+
+=== API base URLs
+
+`RENDER_API_URL`, `CLOUDFLARE_API_URL` and `NEON_API_URL` override the endpoint.
+They exist for testing against a local replay server; leave them unset in
+ordinary use.

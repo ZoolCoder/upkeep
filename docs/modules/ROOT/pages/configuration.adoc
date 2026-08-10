@@ -1,0 +1,80 @@
+= Writing a config
+
+Don't. Read one off the account instead — see xref:commands.adoc[import].
+Hand-written configs are how a file ends up describing an app that does not
+exist: a service id off by a character, a bucket that was renamed, a production
+branch nobody changed here.
+
+== Shape
+
+[source,yaml]
+----
+version: 1
+
+apps:
+  - name: my-app            # <1>
+
+    render:
+      serviceId: srv-000000000000000000
+      image: ghcr.io/example/my-app:latest   # <2>
+      env:
+        - key: SOME_BUCKET                    # <3>
+          value: my-bucket
+        - key: SOME_SECRET_KEY                # <4>
+          valueEnv: SOME_SECRET_KEY
+        - key: SOME_REAL_WORLD_VALUE          # <5>
+          manual: true
+          why: real bank details, set by hand on the service
+
+    r2:
+      accountId: ${CLOUDFLARE_ACCOUNT_ID}     # <6>
+      bucket: my-bucket
+      public: true
+      cors:
+        - origins: [https://my-app.example.com, http://localhost:5173]
+          methods: [PUT]
+          headers: [content-type, cache-control]   # <7>
+          maxAgeSeconds: 3600
+
+    pages:
+      accountId: ${CLOUDFLARE_ACCOUNT_ID}
+      project: my-app
+      productionBranch: main                  # <8>
+      domains: [my-app.pages.dev]
+
+    neon:
+      projectId: ${NEON_PROJECT_ID}
+      branch: main
+      databaseUrlEnv: DATABASE_URL            # <9>
+----
+<1> Every section is optional. Declare the surfaces this app occupies.
+<2> What `apply -deploy` ships. Omit it and `upkeep` never restarts the service.
+<3> Not secret, so the value lives here.
+<4> Secret: resolved from your environment at apply time, written nowhere.
+<5> Nobody's to invent. Reported every run until it is set, with `why` shown.
+<6> `+${VAR}+` is expanded from the environment. An unset variable is an error,
+    never an empty string — an empty account id reaches the API as a malformed
+    path and returns a confusing 404.
+<7> Every header the client sends. For a presigned upload that means every
+    header in the signature; a signed header the preflight refuses fails as
+    `SignatureDoesNotMatch`, which names nothing and reads like a bad key.
+<8> A preview deployment is a different origin, and an exact CORS or allowlist
+    match refuses it.
+<9> Compared against the service's `DATABASE_URL`. Neither value is printed, and
+    `upkeep` will not repoint a running service at another database.
+
+== What it will refuse
+
+A config that would fail confusingly later is rejected at parse time:
+
+* an unknown key — a typo is a setting that silently does nothing
+* a variable with no `value`, `valueEnv` or `manual` — it would reach the
+  service as an empty string
+* `manual: true` with no `why` — "something is missing" without "here is what to
+  do" is not worth printing
+* a literal value under a credential-shaped name — see the page on handling
+  credentials
+* a CORS origin with no scheme or a trailing slash — neither ever matches
+* a `serviceId` that is not shaped like one
+
+Check any config offline with `upkeep validate`.

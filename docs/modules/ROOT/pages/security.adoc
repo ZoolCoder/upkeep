@@ -1,0 +1,94 @@
+= Sensitive values and threat model
+
+[IMPORTANT]
+====
+The config file is meant to be committed. Nothing sensitive goes in it.
+====
+
+A variable either carries a literal value, or names the local environment
+variable its value comes from:
+
+[source,yaml]
+----
+- key: R2_BUCKET             # not sensitive
+  value: my-bucket
+- key: R2_SECRET_ACCESS_KEY  # resolved at apply time, never written
+  valueEnv: R2_SECRET_ACCESS_KEY
+- key: RESEND_API_KEY        # read from a password manager at apply time
+  valueFrom: op://Team/Resend/credential
+- key: FEE_ACCOUNT_INFO      # nobody's to invent
+  manual: true
+  why: real bank details, set by hand on the service
+----
+
+`valueEnv` covers one person: the value is already exported in their shell.
+`valueFrom` covers a team, where it should not be exported by hand at all.
+`upkeep` never handles the vault credential itself — `op` is already signed in,
+or it says so.
+
+The reference is untrusted input to a subprocess, since a config may have come
+from a repository. Commands run without a shell, so there is nothing to
+interpolate into, and the reference is narrowed to the documented shape before
+anything runs. A reference carrying shell metacharacters is refused, not
+escaped.
+
+An unreachable entry becomes a `MANUAL` line naming the reason. One locked
+vault does not stop the rest of a plan.
+
+== Three things enforce it
+
+Rather than trusting anyone to remember.
+
+=== A literal under a credential-shaped name is refused
+
+Write `value:` under a key containing `SECRET`, `TOKEN`, `PASSWORD`, `API_KEY`,
+`ACCESS_KEY`, `SIGNING_KEY`, `PRIVATE_KEY`, `DATABASE_URL`, `DSN` or
+`CONNECTION_STRING`, and the config does not load:
+
+[source,console]
+----
+error: app "demo": env R2_SECRET_ACCESS_KEY carries a literal value, and its
+name says it is a credential — use `valueEnv: R2_SECRET_ACCESS_KEY` so the value
+stays out of this file, or `manual: true` if a human sets it
+----
+
+The check is deliberately eager. A public value wrongly refused costs one line
+of config; a credential wrongly committed costs a rotation. A genuinely public
+value with an unlucky name can still go through `valueEnv`, so the escape hatch
+is never "commit it anyway".
+
+=== import never copies a live value out
+
+A variable whose name looks like a credential comes back as a `valueEnv`
+reference with no value — using the *same* rule as the validator, so an import
+always parses back in. Two lists that could drift is how an importer ends up
+writing a file its own validator refuses.
+
+=== No output ever prints a value
+
+A plan says `differs from the config (value from $R2_SECRET, not shown)`.
+`-json` and a saved plan file follow the identical rule: a machine-readable view
+that leaked what the text view hides would be a way around the guarantee, not a
+second view of it.
+
+== Threat model
+
+`upkeep` holds credentials in memory for one run and writes none to disk. Every
+API client redacts its token in `String()`, so no accidental `%v` prints one.
+Saved plans are written `0600`.
+
+What it does *not* defend against:
+
+A hostile config::
+A config can name any service id or account you have access to, and `valueEnv`
+can name any variable in your environment. Review a config you did not write, as
+you would any script.
+
+A mis-named value::
+The classifier reads names, not contents. It will not catch a credential in a
+variable called `SETTINGS_BLOB`. Use `valueEnv` for anything sensitive
+regardless of what it is called.
+
+A compromised provider CLI session::
+`upkeep` trusts what `render login`, `wrangler login` and `neonctl auth` stored.
+It has exactly the access those sessions have, and no more.

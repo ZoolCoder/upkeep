@@ -1,0 +1,91 @@
+= Commands
+
+== plan
+
+Reads live state and prints what would change. Writes nothing.
+
+[source,console]
+----
+$ upkeep plan                     # every app in the config
+$ upkeep plan -app my-app         # one app; repeat the flag for several
+$ upkeep plan -json               # machine-readable, same redaction rules
+$ upkeep plan -exit-code          # exit 2 when anything differs
+$ upkeep plan -out reviewed.json  # save it, to apply exactly this
+----
+
+== apply
+
+Runs the plan, then *re-reads* and reports anything that did not take.
+
+[source,console]
+----
+$ upkeep apply
+$ upkeep apply reviewed.json   # only if the world still matches what you read
+$ upkeep apply -deploy         # also ship the configured image
+$ upkeep apply -yes            # skip the prompt for a plan that deletes
+----
+
+Applying a saved plan is the safe form. `apply` on its own re-reads live state,
+so what runs is not necessarily what you read a minute ago — someone else's
+deploy or a dashboard edit can move the world in between. With a saved plan,
+`upkeep` re-plans and refuses unless the result is identical:
+
+[source,console]
+----
+the live state changed since this plan was saved.
+  reviewed: CREATE render-env R2_BUCKET — not set on the service → b
+  now:      UPDATE render-env R2_BUCKET — differs from the config → b
+re-run plan
+----
+
+== validate
+
+Parses and checks a config. No network, no credentials, no account needed —
+suitable for a pre-commit hook or a fork's pull request.
+
+[source,console]
+----
+$ upkeep validate
+upkeep.yaml: 2 app(s), valid
+----
+
+== import
+
+Writes a config block from live state, so you never hand-write one that
+describes an app that does not exist.
+
+[source,console]
+----
+$ upkeep import -name my-app -render srv-… -bucket my-bucket -pages my-app
+----
+
+`import` and `plan` compose, so a config need not be saved to be checked:
+
+[source,console]
+----
+$ upkeep import -name my-app -bucket my-bucket \
+  | { echo "version: 1"; echo "apps:"; cat; } \
+  | upkeep plan -config -
+----
+
+== Exit codes
+
+[cols="1,4"]
+|===
+| Code | Meaning
+
+| `0` | nothing to do, or the apply converged and was verified
+| `1` | something failed, or an applied change is still not in place
+| `2` | `plan -exit-code` only: changes are outstanding that upkeep can make
+| `3` | `plan -exit-code` only: nothing left but `MANUAL` items, which no tool can do
+|===
+
+Two codes rather than one, because they are different situations. A gate that
+fails forever on something no tool can do is a gate people turn off, and then it
+catches nothing.
+
+[source,console]
+----
+$ upkeep plan -exit-code -json > plan.json      # fail on 2 and 3
+$ upkeep plan -exit-code || [ $? -eq 3 ]        # fail only on what CI could fix
+----

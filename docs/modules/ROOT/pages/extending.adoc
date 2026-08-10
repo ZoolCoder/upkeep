@@ -1,0 +1,77 @@
+= Adding a provider
+
+A provider is one package that turns config plus live state into actions. There
+is no plugin protocol and no registry — a new surface is a package and a case.
+
+== The shape
+
+[source,go]
+----
+package myprovider
+
+// Plan diffs what the config declares against what the provider reports.
+// It performs no writes: everything it intends goes in an Action's Do.
+func Plan(ctx context.Context, api API, cfg config.MyThing) (plan.Plan, error) {
+	var out plan.Plan
+
+	live, err := api.Read(ctx, cfg.ID)
+	if err != nil {
+		return out, fmt.Errorf("read %s: %w", cfg.ID, err)
+	}
+
+	if live.Setting != cfg.Setting {
+		out.Add(plan.Action{
+			Op:       plan.OpUpdate,
+			Resource: "mything-setting",
+			Target:   cfg.ID,
+			Detail:   "differs from the config: " + cfg.Setting, // <1>
+			Do: func(ctx context.Context) error {
+				return api.Write(ctx, cfg.ID, cfg.Setting)
+			},
+		})
+	}
+	return out, nil
+}
+----
+<1> Say what breaks, not merely what differs. `no CORS rule at all, so a browser
+    cannot upload` sends someone to the right place; `cors mismatch` does not.
+    Never put a value in `Detail`.
+
+== Four rules
+
+Take the API as an interface::
+Not a concrete client. Every planner here is tested against a fake, including
+one that accepts every write and changes nothing — the failure `apply`'s
+verification exists to catch, and one no real API will perform on request.
+
+Make `Do` idempotent::
+An apply can fail part-way. A re-run has to be a re-run, not a compounding mess.
+
+Normalise before comparing::
+Providers return what they store, in their own order and case. If a reordered
+list reads as a difference, the plan will offer the same change forever and
+people will learn to ignore it.
+
+Use `OpManual` for what you cannot do::
+A credential only a dashboard can mint, a value only a human knows. Never invent
+one, and never stay silent about it.
+
+== Wiring it in
+
+Three small edits:
+
+. a struct in `internal/config`, plus its validation
+. a case in `engine.planApp`, guarded by `if provider == nil` so a missing
+  credential becomes a `MANUAL` line rather than a crash
+. a client in its own package, with `String()` redacting the token
+
+== Testing it
+
+No test in this repository touches a network, and that is a rule rather than an
+accident: a contributor should be able to work on `upkeep` with no cloud account,
+and a pull request from a fork should be testable without handing it access to
+anything.
+
+For integration work against real response shapes, capture live payloads once and
+replay them from a local server — `CLOUDFLARE_API_URL` and its siblings exist for
+exactly that.
