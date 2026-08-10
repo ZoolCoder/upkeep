@@ -36,7 +36,7 @@ produced this tool, not by how interesting it is to build.
 
 - [x] `MANUAL` actions for what no tool can do, printed every run until done
 - [x] Credentials borrowed from `render`, `wrangler` and `neonctl`'s own sessions
-- [x] `valueFrom: op://…` for values a team keeps in a vault
+- [x] `valueFrom:` for values a team keeps in a vault — `op://`, `aws://`, `gcp://`
 - [x] A literal under a credential-shaped name refused at parse time
 - [x] Structural diffs — `+header cache-control`, not the whole desired rule
 - [x] Concurrent reads, ordered output, deterministic first failure
@@ -63,8 +63,8 @@ Routes, bindings and secrets, for products whose backend is a Worker rather than
 a container.
 
 **More resolvers.**
-`valueFrom` has one scheme, `op://`. AWS Secrets Manager, Google Secret Manager
-and Vault are each one small type behind the existing interface.
+HashiCorp Vault, and Azure Key Vault. Each is one small type behind the existing
+interface.
 
 ## Considered and declined
 
