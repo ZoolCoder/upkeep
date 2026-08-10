@@ -9,7 +9,9 @@ the reasons are in [the comparison](docs/modules/ROOT/pages/comparison.adoc).
 Everything below is ordered by how much it would have helped the failures that
 produced this tool, not by how interesting it is to build.
 
-## 0.1 — shipped
+## Shipped
+
+See [CHANGELOG.md](CHANGELOG.md) for what landed in which release.
 
 **Surfaces**
 
@@ -45,7 +47,7 @@ produced this tool, not by how interesting it is to build.
 - [x] macOS, Linux and Windows credential paths
 - [x] A fake cloud, so the whole suite runs with no account anywhere
 
-## 0.2 — next
+## Next
 
 **Shipping Pages assets.**
 `upkeep` configures a Pages project but cannot upload a build to it, so a deploy
