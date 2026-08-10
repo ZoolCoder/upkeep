@@ -161,7 +161,8 @@ one no real API will perform on request.
 
 ## Where it is going
 
-See [ROADMAP.md](ROADMAP.md) — including what has been considered and declined,
+See [CHANGELOG.md](CHANGELOG.md) for what has landed, and
+[ROADMAP.md](ROADMAP.md) — including what has been considered and declined,
 which is the more useful half.
 
 ## Contributing
