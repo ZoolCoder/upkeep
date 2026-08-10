@@ -40,6 +40,20 @@ apps:
             real bank details / a credential only a dashboard can mint. Say
             here exactly what a human should do.
 
+    # An alternative to render: the same app, hosted on Fly.io. Declare one or
+    # the other, not both.
+    #
+    # Fly manages secrets rather than environment variables, and never returns
+    # a value — only a name and a digest. So upkeep reports a secret as missing
+    # and can set one, but cannot tell you an existing one is wrong. The plans
+    # say only what was actually checked.
+    #
+    # fly:
+    #   app: my-app
+    #   secrets:
+    #     - key: SOME_SECRET_KEY
+    #       valueEnv: SOME_SECRET_KEY
+
     r2:
       accountId: ${CLOUDFLARE_ACCOUNT_ID}
       bucket: my-bucket

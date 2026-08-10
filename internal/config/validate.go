@@ -32,7 +32,8 @@ func Validate(cfg Config) error {
 		seen[app.Name] = true
 
 		if app.Render == nil && app.R2 == nil && app.Pages == nil &&
-			app.Neon == nil && app.DNS == nil && app.Auth == nil {
+			app.Neon == nil && app.DNS == nil && app.Auth == nil &&
+			app.Fly == nil {
 			return fmt.Errorf("%s: declares no surfaces, so there is nothing to reconcile", where)
 		}
 		if err := validateRender(where, app.Render); err != nil {
@@ -53,6 +54,9 @@ func Validate(cfg Config) error {
 		if err := validateAuth(where, app.Auth); err != nil {
 			return err
 		}
+		if err := validateFly(where, app.Fly); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -67,64 +71,7 @@ func validateRender(where string, r *Render) error {
 	if !strings.HasPrefix(r.ServiceID, "srv-") {
 		return fmt.Errorf("%s: render.serviceId %q does not look like a service id (srv-…)", where, r.ServiceID)
 	}
-	keys := map[string]bool{}
-	for _, e := range r.Env {
-		if e.Key == "" {
-			return fmt.Errorf("%s: an env entry has no key", where)
-		}
-		if keys[e.Key] {
-			return fmt.Errorf("%s: env %s is declared twice", where, e.Key)
-		}
-		keys[e.Key] = true
-
-		// The likeliest way to leak a secret with this tool is to paste one
-		// into a value: and commit the file. The config cannot know what a
-		// value IS, but it knows what the key is called, and a key called
-		// SECRET or TOKEN or PASSWORD holding a literal is almost always that
-		// mistake. Refuse it at parse time, before it is ever written to a
-		// repository, and say which field to use instead.
-		if e.Value != "" && LooksSecret(e.Key) {
-			return fmt.Errorf(
-				"%s: env %s carries a literal value, and its name says it is a credential — "+
-					"use `valueEnv: %s` so the value stays out of this file, or `manual: true` "+
-					"if a human sets it",
-				where, e.Key, e.Key)
-		}
-
-		sources := 0
-		if e.Value != "" {
-			sources++
-		}
-		if e.ValueEnv != "" {
-			sources++
-		}
-		if e.ValueFrom != "" {
-			sources++
-		}
-		if e.Manual {
-			sources++
-		}
-		switch sources {
-		case 1:
-		case 0:
-			return fmt.Errorf(
-				"%s: env %s has no value, valueEnv, valueFrom or manual — an unsourced variable reaches the service as an empty string",
-				where, e.Key)
-		default:
-			return fmt.Errorf("%s: env %s names more than one source", where, e.Key)
-		}
-		if e.ValueFrom != "" && !strings.Contains(e.ValueFrom, "://") {
-			return fmt.Errorf(
-				"%s: env %s valueFrom %q is not a reference; it should look like op://vault/item/field",
-				where, e.Key, e.ValueFrom)
-		}
-		if e.Manual && e.Why == "" {
-			return fmt.Errorf(
-				"%s: env %s is manual with no why — a plan that says something is missing without saying what to do is not worth printing",
-				where, e.Key)
-		}
-	}
-	return nil
+	return validateEnvVars(where, r.Env)
 }
 
 func validateR2(where string, r *R2) error {
@@ -211,6 +158,81 @@ func validateAuth(where string, a *Auth) error {
 		}
 	}
 	return nil
+}
+
+// validateEnvVars is the one rule for a variable that carries a value, used by
+// every provider that has them. Two copies would drift, and the copy that
+// drifted would be the one that let a credential into a committed file.
+func validateEnvVars(where string, vars []EnvVar) error {
+	keys := map[string]bool{}
+	for _, e := range vars {
+		if e.Key == "" {
+			return fmt.Errorf("%s: an env entry has no key", where)
+		}
+		if keys[e.Key] {
+			return fmt.Errorf("%s: env %s is declared twice", where, e.Key)
+		}
+		keys[e.Key] = true
+
+		// The likeliest way to leak a secret with this tool is to paste one
+		// into a value: and commit the file. The config cannot know what a
+		// value IS, but it knows what the key is called, and a key called
+		// SECRET or TOKEN or PASSWORD holding a literal is almost always that
+		// mistake. Refuse it at parse time, before it is ever written to a
+		// repository, and say which field to use instead.
+		if e.Value != "" && LooksSecret(e.Key) {
+			return fmt.Errorf(
+				"%s: env %s carries a literal value, and its name says it is a credential — "+
+					"use `valueEnv: %s` so the value stays out of this file, or `manual: true` "+
+					"if a human sets it",
+				where, e.Key, e.Key)
+		}
+
+		sources := 0
+		if e.Value != "" {
+			sources++
+		}
+		if e.ValueEnv != "" {
+			sources++
+		}
+		if e.ValueFrom != "" {
+			sources++
+		}
+		if e.Manual {
+			sources++
+		}
+		switch sources {
+		case 1:
+		case 0:
+			return fmt.Errorf(
+				"%s: env %s has no value, valueEnv, valueFrom or manual — an unsourced variable reaches the service as an empty string",
+				where, e.Key)
+		default:
+			return fmt.Errorf("%s: env %s names more than one source", where, e.Key)
+		}
+		if e.ValueFrom != "" && !strings.Contains(e.ValueFrom, "://") {
+			return fmt.Errorf(
+				"%s: env %s valueFrom %q is not a reference; it should look like op://vault/item/field",
+				where, e.Key, e.ValueFrom)
+		}
+		if e.Manual && e.Why == "" {
+			return fmt.Errorf(
+				"%s: env %s is manual with no why — a plan that says something is missing without saying what to do is not worth printing",
+				where, e.Key)
+		}
+	}
+	return nil
+}
+
+func validateFly(where string, f *Fly) error {
+	if f == nil {
+		return nil
+	}
+	if f.App == "" {
+		return fmt.Errorf("%s: fly.app is required", where)
+	}
+	// Same rules as a Render variable: the file is meant to be committed.
+	return validateEnvVars(where+" fly.secrets", f.Secrets)
 }
 
 func validateDNS(where string, d *DNS) error {

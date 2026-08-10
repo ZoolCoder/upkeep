@@ -21,6 +21,22 @@ type App struct {
 	Neon   *Neon   `yaml:"neon"`
 	DNS    *DNS    `yaml:"dns"`
 	Auth   *Auth   `yaml:"auth"`
+	Fly    *Fly    `yaml:"fly"`
+}
+
+// Fly is an app on Fly.io — the second place a backend can run, and the test of
+// whether the provider seam is a seam.
+//
+// It manages secrets rather than environment variables, and the difference is
+// not cosmetic: Fly never returns a secret's value, only its name and a digest.
+// upkeep can therefore report a secret as missing and set one, but cannot tell
+// you an existing one is wrong. That limit is the provider's, and the plans say
+// only what was actually checked.
+type Fly struct {
+	App string `yaml:"app"`
+	// Secrets uses the same shape as a Render variable, so a value that must
+	// not be committed names its source rather than carrying it.
+	Secrets []EnvVar `yaml:"secrets"`
 }
 
 // Auth is the one surface that checks variables against each other rather than

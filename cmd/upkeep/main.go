@@ -13,6 +13,7 @@ import (
 	"github.com/zoolcoder/upkeep/internal/cfapi"
 	"github.com/zoolcoder/upkeep/internal/config"
 	"github.com/zoolcoder/upkeep/internal/engine"
+	"github.com/zoolcoder/upkeep/internal/flyapi"
 	"github.com/zoolcoder/upkeep/internal/importer"
 	"github.com/zoolcoder/upkeep/internal/neonapi"
 	"github.com/zoolcoder/upkeep/internal/plan"
@@ -320,7 +321,18 @@ func providers() engine.Providers {
 	if neonKey != "" {
 		p.Neon = neonapi.New(os.Getenv("NEON_API_URL"), neonKey)
 	}
+	if key := flyToken(); key != "" {
+		p.Fly = flyapi.New(os.Getenv("FLY_API_URL"), key)
+	}
 	return p
+}
+
+// flyToken completes the set for the second hosting provider.
+func flyToken() string {
+	if key := os.Getenv("FLY_API_TOKEN"); key != "" {
+		return key
+	}
+	return flyapi.TokenFromCLI()
 }
 
 // renderToken prefers the environment, then the render CLI's own session, so an

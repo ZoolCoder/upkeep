@@ -14,6 +14,7 @@ produced this tool, not by how interesting it is to build.
 **Surfaces**
 
 - [x] Render: service environment, deploys, waiting for a deploy to reach live
+- [x] Fly.io: app secrets — tested against a fake, not yet against a real account
 - [x] Cloudflare R2: bucket, public access, CORS
 - [x] Cloudflare Pages: production branch, domain reporting
 - [x] Cloudflare DNS: the records a site needs, never removing one it did not declare
@@ -53,10 +54,13 @@ what is missing — which `wrangler` already does well. Worth doing only if the
 seam between the two turns out to cause real problems; shelling out to
 `wrangler` is not obviously worse than reimplementing it.
 
-**A second hosting provider.**
-Render is one opinion about where a backend runs. Fly.io and Railway are the
-common alternatives for this shape of product, and adding one is the real test
-of whether the provider seam is a seam or just tidy code.
+**Verify Fly against a real account.**
+The provider is written and tested against a fake, and the seam held — it shares
+no code with Render, only an interface. It has never run against a real Fly app,
+and until it has, that is what the roadmap says.
+
+**Railway.**
+The other common alternative for this shape of product.
 
 **Workers.**
 Routes, bindings and secrets, for products whose backend is a Worker rather than

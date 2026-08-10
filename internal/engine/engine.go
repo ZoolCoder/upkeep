@@ -15,6 +15,8 @@ import (
 	"github.com/zoolcoder/upkeep/internal/cfapi"
 	"github.com/zoolcoder/upkeep/internal/config"
 	"github.com/zoolcoder/upkeep/internal/dns"
+	"github.com/zoolcoder/upkeep/internal/flyapi"
+	"github.com/zoolcoder/upkeep/internal/flysecrets"
 	"github.com/zoolcoder/upkeep/internal/neon"
 	"github.com/zoolcoder/upkeep/internal/neonapi"
 	"github.com/zoolcoder/upkeep/internal/pages"
@@ -32,6 +34,13 @@ type Render interface {
 	SetEnvVar(ctx context.Context, serviceID, key, value string) error
 	Deploy(ctx context.Context, serviceID, image string) (string, error)
 	DeployStatus(ctx context.Context, serviceID, deployID string) (renderapi.DeployStatus, error)
+}
+
+// Fly is the second hosting provider. It shares no code with Render — only
+// this shape — which is what makes the seam a seam.
+type Fly interface {
+	Secrets(ctx context.Context, app string) (map[string]flyapi.Secret, error)
+	SetSecret(ctx context.Context, app, name, value string) error
 }
 
 // CF is the Cloudflare transport, shared by the R2 and Pages planners.
@@ -53,12 +62,14 @@ type Providers struct {
 	Render Render
 	CF     CF
 	Neon   Neon
+	Fly    Fly
 }
 
 var (
 	_ Render = (*renderapi.Client)(nil)
 	_ CF     = (*cfapi.Client)(nil)
 	_ Neon   = (*neonapi.Client)(nil)
+	_ Fly    = (*flyapi.Client)(nil)
 )
 
 type Options struct {
@@ -182,6 +193,18 @@ func (e *Engine) planApp(ctx context.Context, app config.App) (plan.Plan, error)
 			if e.opts.Deploy {
 				out.Add(e.deployAction(e.prov.Render, *r))
 			}
+		}
+	}
+
+	if f := app.Fly; f != nil {
+		if e.prov.Fly == nil {
+			out.Add(missingCredential("fly-secret", f.App, "FLY_API_TOKEN, or `fly auth login`"))
+		} else {
+			p, err := flysecrets.Plan(ctx, e.prov.Fly, *f, e.opts.Getenv, e.opts.Secrets)
+			if err != nil {
+				return out, err
+			}
+			out.Extend(p)
 		}
 	}
 
