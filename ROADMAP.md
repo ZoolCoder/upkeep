@@ -14,6 +14,7 @@ produced this tool, not by how interesting it is to build.
 **Surfaces**
 
 - [x] Render: service environment, deploys, waiting for a deploy to reach live
+- [x] Fly.io: app secrets — tested against a fake, not yet against a real account
 - [x] Cloudflare R2: bucket, public access, CORS
 - [x] Cloudflare Pages: production branch, domain reporting
 - [x] Cloudflare DNS: the records a site needs, never removing one it did not declare
@@ -27,6 +28,7 @@ produced this tool, not by how interesting it is to build.
 - [x] `apply`, which re-reads afterwards to check the change took
 - [x] `apply <saved-plan>` — apply exactly what you reviewed, or be told the world moved
 - [x] `status` — what is live right now, without diffing
+- [x] `report` — a scheduled run's summary, actionable split from outstanding
 - [x] `validate` — offline, no network and no credentials
 - [x] `import` — read a config off the account rather than writing one
 - [x] `-config -`, so `import` and `plan` compose through a pipe
@@ -35,7 +37,7 @@ produced this tool, not by how interesting it is to build.
 
 - [x] `MANUAL` actions for what no tool can do, printed every run until done
 - [x] Credentials borrowed from `render`, `wrangler` and `neonctl`'s own sessions
-- [x] `valueFrom: op://…` for values a team keeps in a vault
+- [x] `valueFrom:` for values a team keeps in a vault — `op://`, `aws://`, `gcp://`
 - [x] A literal under a credential-shaped name refused at parse time
 - [x] Structural diffs — `+header cache-control`, not the whole desired rule
 - [x] Concurrent reads, ordered output, deterministic first failure
@@ -52,23 +54,21 @@ what is missing — which `wrangler` already does well. Worth doing only if the
 seam between the two turns out to cause real problems; shelling out to
 `wrangler` is not obviously worse than reimplementing it.
 
-**A second hosting provider.**
-Render is one opinion about where a backend runs. Fly.io and Railway are the
-common alternatives for this shape of product, and adding one is the real test
-of whether the provider seam is a seam or just tidy code.
+**Verify Fly against a real account.**
+The provider is written and tested against a fake, and the seam held — it shares
+no code with Render, only an interface. It has never run against a real Fly app,
+and until it has, that is what the roadmap says.
+
+**Railway.**
+The other common alternative for this shape of product.
 
 **Workers.**
 Routes, bindings and secrets, for products whose backend is a Worker rather than
 a container.
 
-**A drift report worth scheduling.**
-`plan -json` already fits CI. What is missing is something worth waking up to: a
-summary across every app, manual items separated from actionable ones, so a
-weekly run is a page you read rather than a log you skim.
-
 **More resolvers.**
-`valueFrom` has one scheme, `op://`. AWS Secrets Manager, Google Secret Manager
-and Vault are each one small type behind the existing interface.
+HashiCorp Vault, and Azure Key Vault. Each is one small type behind the existing
+interface.
 
 ## Considered and declined
 

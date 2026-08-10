@@ -13,10 +13,12 @@ import (
 	"github.com/zoolcoder/upkeep/internal/cfapi"
 	"github.com/zoolcoder/upkeep/internal/config"
 	"github.com/zoolcoder/upkeep/internal/engine"
+	"github.com/zoolcoder/upkeep/internal/flyapi"
 	"github.com/zoolcoder/upkeep/internal/importer"
 	"github.com/zoolcoder/upkeep/internal/neonapi"
 	"github.com/zoolcoder/upkeep/internal/plan"
 	"github.com/zoolcoder/upkeep/internal/renderapi"
+	"github.com/zoolcoder/upkeep/internal/report"
 	"github.com/zoolcoder/upkeep/internal/status"
 )
 
@@ -28,6 +30,7 @@ const usage = `upkeep reconciles an app's cloud footprint from a YAML file.
 Usage:
   upkeep plan     [flags]        show what would change (default)
   upkeep apply    [flags] [file] make the changes; with a saved plan, exactly those
+  upkeep report   [flags]        a scheduled run's summary: what can be fixed, what waits
   upkeep status   [flags]        what is live right now, without diffing
   upkeep validate [flags]        check the config offline, no network or credentials
   upkeep import   [flags]        print a config block from live state
@@ -36,16 +39,16 @@ Usage:
 Exit codes:
   0  nothing to do, or the apply converged and was verified
   1  something failed, or an applied change is still not in place
-  2  plan -exit-code only: changes are outstanding that upkeep can make
-  3  plan -exit-code only: nothing left but MANUAL items, which no tool can do
+  2  with -exit-code: changes are outstanding that upkeep can make
+  3  with -exit-code: nothing left but MANUAL items, which no tool can do
 
 Flags:
   -config string   config file, or "-" for standard input (default "upkeep.yaml")
   -app value       limit to this app; repeat for several
   -deploy          also trigger a Render deploy once the environment converges
   -yes             skip the confirmation prompt for deletions
-  -exit-code       plan only: exit 2 when anything differs, so CI can fail on drift
-  -json            plan and status: machine-readable output, same redaction rules
+  -exit-code       plan and report: exit 2 for changes, 3 for manual-only
+  -json            plan, status and report: machine-readable, same redaction rules
   -out string      plan only: save the plan, to apply exactly what you reviewed
   -image string    override the image a -deploy ships, e.g. the tag just built
 
@@ -114,7 +117,7 @@ func runCLI(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	case "help", "-h", "--help":
 		_, err := fmt.Fprint(stdout, usage)
 		return err
-	case "plan", "apply", "import", "validate", "status":
+	case "plan", "apply", "import", "validate", "status", "report":
 	default:
 		fmt.Fprint(stderr, usage)
 		return fmt.Errorf("unknown command %q", command)
@@ -200,6 +203,27 @@ func runCLI(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	p, err := eng.Plan(ctx)
 	if err != nil {
 		return err
+	}
+
+	if command == "report" {
+		r := report.From(p)
+		if *asJSON {
+			if err := r.WriteJSON(stdout); err != nil {
+				return err
+			}
+		} else if err := r.Write(stdout); err != nil {
+			return err
+		}
+		// Same codes as plan, so one scheduled job can gate on either.
+		if *exitCode {
+			switch {
+			case len(r.Actionable) > 0:
+				return errDrift
+			case len(r.Outstanding) > 0:
+				return errManualOnly
+			}
+		}
+		return nil
 	}
 
 	if command == "plan" {
@@ -297,7 +321,18 @@ func providers() engine.Providers {
 	if neonKey != "" {
 		p.Neon = neonapi.New(os.Getenv("NEON_API_URL"), neonKey)
 	}
+	if key := flyToken(); key != "" {
+		p.Fly = flyapi.New(os.Getenv("FLY_API_URL"), key)
+	}
 	return p
+}
+
+// flyToken completes the set for the second hosting provider.
+func flyToken() string {
+	if key := os.Getenv("FLY_API_TOKEN"); key != "" {
+		return key
+	}
+	return flyapi.TokenFromCLI()
 }
 
 // renderToken prefers the environment, then the render CLI's own session, so an

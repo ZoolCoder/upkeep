@@ -23,6 +23,26 @@ variable its value comes from:
 
 `valueEnv` covers one person: the value is already exported in their shell.
 `valueFrom` covers a team, where it should not be exported by hand at all.
+
+Three schemes ship:
+
+[cols="1,3"]
+|===
+| Reference | Read through
+
+| `op://vault/item/field`
+| the `op` CLI (1Password)
+
+| `aws://secret-name` or `aws://secret-name#json-field`
+| the `aws` CLI (Secrets Manager) — naming a field pulls one value out of a
+  JSON secret, which is the common shape
+
+| `gcp://project/secret` or `gcp://project/secret/version`
+| the `gcloud` CLI (Secret Manager) — omitting the version means `latest`
+|===
+
+Each names one specific tool with a fixed argument shape, never a general
+"run this", so a config cannot become a script.
 `upkeep` never handles the vault credential itself — `op` is already signed in,
 or it says so.
 

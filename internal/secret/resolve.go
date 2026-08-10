@@ -10,6 +10,7 @@ package secret
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -38,8 +39,12 @@ func NewSet(resolvers ...Resolver) *Set {
 	return s
 }
 
-// Default is what the CLI uses.
-func Default() *Set { return NewSet(OnePassword{}) }
+// Default is what the CLI uses. Each resolver names one specific tool with a
+// fixed argument shape — never a general "run this" — so a config cannot
+// become a script.
+func Default() *Set {
+	return NewSet(OnePassword{}, AWSSecretsManager{}, GoogleSecretManager{})
+}
 
 // Schemes lists what this build can resolve, for an error that helps.
 func (s *Set) Schemes() []string {
@@ -112,4 +117,92 @@ func execCommand(ctx context.Context, args ...string) ([]byte, error) {
 		return nil, fmt.Errorf("%s is not installed", args[0])
 	}
 	return exec.CommandContext(ctx, args[0], args[1:]...).Output()
+}
+
+// awsRef is `aws://secret-name` or `aws://secret-name#json-key`, narrowed to
+// the characters AWS actually permits in a secret id.
+var awsRef = regexp.MustCompile(`^aws://[A-Za-z0-9/_+=.@-]+(#[A-Za-z0-9_.-]+)?$`)
+
+// AWSSecretsManager reads through the `aws` CLI, so upkeep never handles an AWS
+// credential itself: the CLI is configured, or it is not and says so.
+type AWSSecretsManager struct {
+	run func(ctx context.Context, args ...string) ([]byte, error)
+}
+
+func (AWSSecretsManager) Scheme() string { return "aws" }
+
+func (a AWSSecretsManager) Resolve(ctx context.Context, ref string) (string, error) {
+	if !awsRef.MatchString(ref) {
+		return "", fmt.Errorf(
+			"%q is not an AWS reference; it should look like aws://my-secret or aws://my-secret#field", ref)
+	}
+	name, field, _ := strings.Cut(strings.TrimPrefix(ref, "aws://"), "#")
+
+	run := a.run
+	if run == nil {
+		run = execCommand
+	}
+	out, err := run(ctx, "aws", "secretsmanager", "get-secret-value",
+		"--secret-id", name, "--query", "SecretString", "--output", "text")
+	if err != nil {
+		return "", fmt.Errorf(
+			"reading %s from Secrets Manager failed (%w) — is the aws CLI installed and configured?", ref, err)
+	}
+	value := strings.TrimSpace(string(out))
+	if field == "" {
+		return value, nil
+	}
+	// A secret holding a JSON document is the common shape; naming a field
+	// beats making every caller store one value per secret.
+	var doc map[string]any
+	if err := json.Unmarshal([]byte(value), &doc); err != nil {
+		return "", fmt.Errorf("%s names a field, but the secret is not JSON", ref)
+	}
+	found, ok := doc[field]
+	if !ok {
+		return "", fmt.Errorf("%s: the secret has no field %q", ref, field)
+	}
+	text, ok := found.(string)
+	if !ok {
+		return "", fmt.Errorf("%s: field %q is not a string", ref, field)
+	}
+	return text, nil
+}
+
+// gcpRef is `gcp://project/secret` or `gcp://project/secret/version`.
+var gcpRef = regexp.MustCompile(`^gcp://[a-z0-9-]+/[A-Za-z0-9_-]+(/[A-Za-z0-9]+)?$`)
+
+// GoogleSecretManager reads through the `gcloud` CLI, for the same reason.
+type GoogleSecretManager struct {
+	run func(ctx context.Context, args ...string) ([]byte, error)
+}
+
+func (GoogleSecretManager) Scheme() string { return "gcp" }
+
+func (g GoogleSecretManager) Resolve(ctx context.Context, ref string) (string, error) {
+	if !gcpRef.MatchString(ref) {
+		return "", fmt.Errorf(
+			"%q is not a Google reference; it should look like gcp://project/secret or gcp://project/secret/3", ref)
+	}
+	parts := strings.Split(strings.TrimPrefix(ref, "gcp://"), "/")
+	project, name := parts[0], parts[1]
+	version := "latest"
+	if len(parts) == 3 {
+		version = parts[2]
+	}
+
+	run := g.run
+	if run == nil {
+		run = execCommand
+	}
+	out, err := run(ctx, "gcloud", "secrets", "versions", "access", version,
+		"--secret", name, "--project", project)
+	if err != nil {
+		return "", fmt.Errorf(
+			"reading %s from Secret Manager failed (%w) — is gcloud installed and authenticated?", ref, err)
+	}
+	// No TrimSpace beyond the newline gcloud adds: a secret may legitimately
+	// end in whitespace, and trimming it silently would produce a value that
+	// works nowhere and looks right everywhere.
+	return strings.TrimRight(string(out), "\n"), nil
 }

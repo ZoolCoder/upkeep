@@ -38,6 +38,40 @@ the live state changed since this plan was saved.
 re-run plan
 ----
 
+== report
+
+A scheduled run's summary. `plan` answers "what differs" for someone at a
+keyboard; `report` answers a different question for someone who was not
+watching.
+
+[source,console]
+----
+$ upkeep report                # every app
+$ upkeep report -json          # for a dashboard or a bot
+$ upkeep report -exit-code     # same codes as plan
+----
+
+It splits the plan in two, because the halves read differently:
+
+[source,console]
+----
+2 change(s) upkeep can make, 6 waiting on a human
+
+upkeep apply would close these:
+  render-env  R2_BUCKET   not set on the service → zoolaqar
+  r2-cors     zoolaqar    +header cache-control
+
+No tool can do these:
+  render-env  FEE_ACCOUNT_INFO      real bank details, set by hand
+  render-env  R2_SECRET_ACCESS_KEY  set $R2_SECRET_ACCESS_KEY locally
+----
+
+What upkeep can still fix comes first. The manual items will be there next week
+too, and leading with them trains people to scroll past the part that changed.
+
+A run with nothing to say prints one line, which is what makes a weekly job one
+people leave switched on.
+
 == validate
 
 Parses and checks a config. No network, no credentials, no account needed —

@@ -83,3 +83,18 @@ It asserts, and proves what can be proved:
 
 It changes nothing. Authentication is the one surface where a wrong automatic
 fix locks out everybody, including whoever ran the tool.
+
+== Two hosting providers
+
+`render` and `fly` are alternatives: declare one or the other. They share no
+code, only an interface, which is what makes adding a third a package rather
+than a refactor.
+
+They differ in what they can honestly report, and the plans say so:
+
+* Render returns a variable's value, so `upkeep` can tell you one *differs from
+  the config*.
+* Fly returns a secret's name and digest and never its value, so `upkeep` can
+  tell you a secret is *missing* and can set one — but cannot tell you an
+  existing one is wrong. It stays silent about those rather than claiming a
+  comparison it did not make.
