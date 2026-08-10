@@ -27,6 +27,7 @@ produced this tool, not by how interesting it is to build.
 - [x] `apply`, which re-reads afterwards to check the change took
 - [x] `apply <saved-plan>` — apply exactly what you reviewed, or be told the world moved
 - [x] `status` — what is live right now, without diffing
+- [x] `report` — a scheduled run's summary, actionable split from outstanding
 - [x] `validate` — offline, no network and no credentials
 - [x] `import` — read a config off the account rather than writing one
 - [x] `-config -`, so `import` and `plan` compose through a pipe
@@ -60,11 +61,6 @@ of whether the provider seam is a seam or just tidy code.
 **Workers.**
 Routes, bindings and secrets, for products whose backend is a Worker rather than
 a container.
-
-**A drift report worth scheduling.**
-`plan -json` already fits CI. What is missing is something worth waking up to: a
-summary across every app, manual items separated from actionable ones, so a
-weekly run is a page you read rather than a log you skim.
 
 **More resolvers.**
 `valueFrom` has one scheme, `op://`. AWS Secrets Manager, Google Secret Manager
