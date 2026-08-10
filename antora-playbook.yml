@@ -12,6 +12,9 @@ content:
       start_path: docs
       branches: HEAD
 ui:
+  # The studio identity, applied over the default UI rather than forked from
+  # it: an upstream fix keeps arriving, and a fork stops receiving them.
+  supplemental_files: ./docs/supplemental-ui
   bundle:
     url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
     snapshot: true

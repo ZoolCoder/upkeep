@@ -1,0 +1,341 @@
+/*
+ * The ZoolCoder identity, applied to Antora's default UI.
+ *
+ * Values are taken from zoolcoder.com itself rather than approximated, so the
+ * manual and the studio site are the same product rather than two that happen
+ * to share a palette.
+ */
+:root {
+  --zc-page: #07080b;
+  --zc-surface: #0d0f14;
+  --zc-surface-2: #12151c;
+  --zc-line: #1e2029;
+  --zc-line-strong: #2a2d38;
+
+  --zc-ink: #e8eaf0;
+  --zc-ink-soft: #9aa0b0;
+  --zc-ink-faint: #6b7080;
+
+  --zc-primary: #2dd4bf;
+  --zc-accent: #22d3ee;
+  --zc-secondary: #6366f1;
+  --zc-warning: #fbbf24;
+  --zc-negative: #f0a39c;
+
+  --zc-radius: 4px;
+  --zc-ease: cubic-bezier(.22, 1, .36, 1);
+  --zc-dur: 240ms;
+
+  --zc-heading: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --zc-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --zc-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+}
+
+/* --- the page ------------------------------------------------------------ */
+
+html, body { background: var(--zc-page); }
+
+body {
+  font-family: var(--zc-body);
+  color: var(--zc-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.body { background: var(--zc-page); }
+
+/* --- the top bar --------------------------------------------------------- */
+
+.navbar {
+  background: var(--zc-page);
+  border-bottom: 1px solid var(--zc-line);
+}
+.navbar-brand .navbar-item,
+.navbar-item, .navbar-link {
+  color: var(--zc-ink);
+  font-family: var(--zc-heading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.navbar-item:hover, .navbar-link:hover { color: var(--zc-primary); background: transparent; }
+.navbar-brand .navbar-item.is-hoverable:hover { background: transparent; }
+
+/* The wordmark reads as the product, not as another nav link. */
+.navbar-brand .navbar-item:first-child { font-size: 1.05rem; }
+
+/* --- the left nav -------------------------------------------------------- */
+
+.nav-container, .nav { background: var(--zc-surface); border-right: 1px solid var(--zc-line); }
+.nav-menu { font-size: 0.9rem; }
+.nav-title {
+  font-family: var(--zc-heading);
+  color: var(--zc-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+}
+.nav-list .nav-list { border-left: 1px solid var(--zc-line); }
+.nav-link, .nav-text { color: var(--zc-ink-soft); }
+.nav-link:hover { color: var(--zc-ink); }
+
+/* The current page is marked by a rule in the brand colour rather than a
+   filled block: a solid highlight in a dark UI shouts, and the reader already
+   knows where they are. */
+.nav-item.is-current-page > .nav-link,
+.nav-item.is-current-page > .nav-text {
+  color: var(--zc-primary);
+  font-weight: 500;
+}
+.nav-list .nav-item.is-current-page { box-shadow: inset 2px 0 0 var(--zc-primary); }
+
+/* --- the article --------------------------------------------------------- */
+
+.doc { color: var(--zc-ink); }
+
+.doc h1, .doc h2, .doc h3, .doc h4, .doc h5, .doc h6 {
+  font-family: var(--zc-heading);
+  color: #fff;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+.doc h1.page { font-size: 2.1rem; line-height: 1.2; }
+.doc h2 {
+  border-bottom: 1px solid var(--zc-line);
+  padding-bottom: 0.35rem;
+  margin-top: 2.6rem;
+}
+.doc h3 { color: var(--zc-ink); }
+
+.doc p, .doc li { line-height: 1.75; }
+/* 65–75ch: prose wider than that loses the line it is on. */
+.doc p, .doc ul, .doc ol, .doc dl { max-width: 72ch; }
+
+.doc a { color: var(--zc-accent); text-decoration-color: color-mix(in oklab, var(--zc-accent) 40%, transparent); }
+.doc a:hover { color: var(--zc-primary); }
+
+.doc strong { color: #fff; }
+
+/* --- definition lists, which the surface pages lean on ------------------- */
+
+.doc dt {
+  font-family: var(--zc-heading);
+  color: var(--zc-primary);
+  font-weight: 600;
+  margin-top: 1.1rem;
+}
+.doc dd { color: var(--zc-ink-soft); }
+
+/* --- code ---------------------------------------------------------------- */
+
+.doc code, .doc pre { font-family: var(--zc-mono); }
+
+.doc :not(pre) > code {
+  background: var(--zc-surface-2);
+  border: 1px solid var(--zc-line);
+  border-radius: var(--zc-radius);
+  color: var(--zc-primary);
+  padding: 0.1em 0.35em;
+  font-size: 0.87em;
+}
+
+.doc pre.highlight code, .doc .literalblock pre {
+  background: var(--zc-surface);
+  border: 1px solid var(--zc-line);
+  border-radius: var(--zc-radius);
+  color: var(--zc-ink);
+  font-size: 0.86rem;
+  line-height: 1.7;
+  padding: 1rem 1.1rem;
+}
+
+/* A console block is a transcript, so it gets the terminal's own frame. */
+.doc .listingblock[data-lang="console"] pre,
+.doc pre.highlight code.language-console {
+  border-left: 2px solid var(--zc-primary);
+}
+
+/* --- callouts and admonitions -------------------------------------------- */
+
+.doc .admonitionblock {
+  background: var(--zc-surface);
+  border: 1px solid var(--zc-line);
+  border-radius: var(--zc-radius);
+}
+.doc .admonitionblock td.content { color: var(--zc-ink-soft); }
+.doc .admonitionblock .icon {
+  font-family: var(--zc-heading);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.doc .admonitionblock.note .icon { color: var(--zc-accent); }
+.doc .admonitionblock.tip .icon { color: var(--zc-primary); }
+.doc .admonitionblock.important .icon { color: var(--zc-warning); }
+.doc .admonitionblock.warning .icon,
+.doc .admonitionblock.caution .icon { color: var(--zc-negative); }
+
+/* The left rule carries the severity, so the reader sorts them without
+   reading the label. */
+.doc .admonitionblock.note { border-left: 2px solid var(--zc-accent); }
+.doc .admonitionblock.tip { border-left: 2px solid var(--zc-primary); }
+.doc .admonitionblock.important { border-left: 2px solid var(--zc-warning); }
+.doc .admonitionblock.warning,
+.doc .admonitionblock.caution { border-left: 2px solid var(--zc-negative); }
+
+/* --- tables -------------------------------------------------------------- */
+
+.doc table.tableblock { border-color: var(--zc-line); }
+.doc table.tableblock thead th {
+  font-family: var(--zc-heading);
+  background: var(--zc-surface-2);
+  color: var(--zc-ink);
+  border-color: var(--zc-line-strong);
+}
+.doc table.tableblock td, .doc table.tableblock th { border-color: var(--zc-line); }
+.doc table.tableblock tbody tr:nth-child(even) { background: color-mix(in oklab, var(--zc-surface) 60%, transparent); }
+
+/* --- the right-hand contents --------------------------------------------- */
+
+.toc .toc-menu h3 {
+  font-family: var(--zc-heading);
+  color: var(--zc-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+}
+.toc .toc-menu a { color: var(--zc-ink-soft); border-left: 1px solid var(--zc-line); }
+.toc .toc-menu a:hover { color: var(--zc-ink); }
+.toc .toc-menu a.is-active { color: var(--zc-primary); border-left-color: var(--zc-primary); }
+
+/* --- chrome -------------------------------------------------------------- */
+
+.toolbar { background: var(--zc-page); border-bottom: 1px solid var(--zc-line); color: var(--zc-ink-faint); }
+.toolbar a { color: var(--zc-ink-soft); }
+.breadcrumbs li::after { color: var(--zc-line-strong); }
+
+footer.footer { background: var(--zc-page); border-top: 1px solid var(--zc-line); color: var(--zc-ink-faint); }
+footer.footer a { color: var(--zc-ink-soft); }
+
+.doc hr { border-color: var(--zc-line); }
+.doc blockquote { border-left: 2px solid var(--zc-line-strong); color: var(--zc-ink-soft); }
+
+/* --- motion -------------------------------------------------------------- */
+
+a, .nav-link, .toc .toc-menu a {
+  transition: color var(--zc-dur) var(--zc-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* --- selection and focus ------------------------------------------------- */
+
+::selection { background: color-mix(in oklab, var(--zc-primary) 30%, transparent); color: #fff; }
+
+a:focus-visible, button:focus-visible, .nav-link:focus-visible {
+  outline: 2px solid var(--zc-primary);
+  outline-offset: 2px;
+  border-radius: var(--zc-radius);
+}
+
+/* --- the studio link ------------------------------------------------------ */
+
+/* Set apart from the project's own links: it leaves the manual. */
+.navbar-item.zc-studio {
+  color: var(--zc-ink-faint);
+  border-left: 1px solid var(--zc-line);
+  margin-left: 0.4rem;
+  padding-left: 1rem;
+}
+.navbar-item.zc-studio:hover { color: var(--zc-primary); }
+
+/* --- wide content scrolls inside its own box ----------------------------- */
+
+/* A plan line is long by design — it names a resource, a target and a reason.
+   Clipped, the reason is the part that disappears, which is the part that
+   matters. */
+.doc pre.highlight, .doc .literalblock pre, .doc pre {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.doc .tableblock, .doc table.tableblock { display: block; overflow-x: auto; }
+.doc table.tableblock { width: 100%; }
+
+/* A scrollbar that only appears on hover is one people do not find. */
+.doc pre::-webkit-scrollbar { height: 8px; }
+.doc pre::-webkit-scrollbar-track { background: transparent; }
+.doc pre::-webkit-scrollbar-thumb {
+  background: var(--zc-line-strong);
+  border-radius: 99px;
+}
+.doc pre::-webkit-scrollbar-thumb:hover { background: var(--zc-ink-faint); }
+
+/* --- the default UI's light surfaces, which leak through ----------------- */
+
+/* An admonition is a table internally, and the inner cells carry their own
+   background. Without these the callout renders cream on a dark page. */
+.doc .admonitionblock > table,
+.doc .admonitionblock > table > tbody,
+.doc .admonitionblock > table > tbody > tr,
+.doc .admonitionblock td.content {
+  background: transparent;
+  border: 0;
+}
+.doc .admonitionblock td.icon {
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--zc-line);
+}
+.doc .admonitionblock td.content > :last-child { margin-bottom: 0; }
+
+/* The label is set in the severity's own colour on the page's own surface,
+   rather than as a filled chip: a solid block of colour in a dark UI reads as
+   an alert even when the note is only a note. */
+.doc .admonitionblock .icon i::after,
+.doc .admonitionblock .icon .title {
+  background: transparent;
+  font-family: var(--zc-heading);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+/* A header cell — row or column — is the same surface either way. */
+.doc table.tableblock th.tableblock,
+.doc table.tableblock thead th,
+.doc table.tableblock tfoot th {
+  background: var(--zc-surface-2);
+  color: var(--zc-ink);
+}
+.doc table.tableblock td.tableblock { background: transparent; color: var(--zc-ink); }
+.doc table.tableblock caption { color: var(--zc-ink-faint); }
+
+/* Sidebars and example blocks are surfaces too. */
+.doc .sidebarblock, .doc .exampleblock > .content, .doc .quoteblock {
+  background: var(--zc-surface);
+  border: 1px solid var(--zc-line);
+  border-radius: var(--zc-radius);
+  color: var(--zc-ink-soft);
+}
+.doc .sidebarblock .title, .doc .exampleblock .title { color: var(--zc-ink); }
+
+/* The label chip. The default UI colours these itself, so the chip and the
+   left rule disagreed — the rule said amber and the chip said red about the
+   same note. One severity, one colour. */
+.doc .admonitionblock td.icon i {
+  background: transparent;
+  border-radius: var(--zc-radius);
+  padding: 0.1rem 0.45rem;
+  font-style: normal;
+}
+.doc .admonitionblock td.icon i::after {
+  content: attr(title);
+  font-family: var(--zc-heading);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.doc .admonitionblock.note td.icon i { color: var(--zc-accent); background: color-mix(in oklab, var(--zc-accent) 14%, transparent); }
+.doc .admonitionblock.tip td.icon i { color: var(--zc-primary); background: color-mix(in oklab, var(--zc-primary) 14%, transparent); }
+.doc .admonitionblock.important td.icon i { color: var(--zc-warning); background: color-mix(in oklab, var(--zc-warning) 14%, transparent); }
+.doc .admonitionblock.warning td.icon i,
+.doc .admonitionblock.caution td.icon i { color: var(--zc-negative); background: color-mix(in oklab, var(--zc-negative) 14%, transparent); }
