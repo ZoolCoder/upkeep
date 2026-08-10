@@ -25,6 +25,7 @@ import (
 	"github.com/zoolcoder/upkeep/internal/renderapi"
 	"github.com/zoolcoder/upkeep/internal/renderenv"
 	"github.com/zoolcoder/upkeep/internal/secret"
+	"github.com/zoolcoder/upkeep/internal/workers"
 )
 
 // Render is everything the engine asks of Render: read an environment, write
@@ -193,6 +194,18 @@ func (e *Engine) planApp(ctx context.Context, app config.App) (plan.Plan, error)
 			if e.opts.Deploy {
 				out.Add(e.deployAction(e.prov.Render, *r))
 			}
+		}
+	}
+
+	if w := app.Workers; w != nil {
+		if e.prov.CF == nil {
+			out.Add(missingCredential("worker-secret", w.Script, "CLOUDFLARE_API_TOKEN"))
+		} else {
+			p, err := workers.Plan(ctx, e.prov.CF, *w, e.opts.Getenv, e.opts.Secrets)
+			if err != nil {
+				return out, err
+			}
+			out.Extend(p)
 		}
 	}
 

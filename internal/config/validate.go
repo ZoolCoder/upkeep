@@ -33,7 +33,7 @@ func Validate(cfg Config) error {
 
 		if app.Render == nil && app.R2 == nil && app.Pages == nil &&
 			app.Neon == nil && app.DNS == nil && app.Auth == nil &&
-			app.Fly == nil {
+			app.Fly == nil && app.Workers == nil {
 			return fmt.Errorf("%s: declares no surfaces, so there is nothing to reconcile", where)
 		}
 		if err := validateRender(where, app.Render); err != nil {
@@ -55,6 +55,9 @@ func Validate(cfg Config) error {
 			return err
 		}
 		if err := validateFly(where, app.Fly); err != nil {
+			return err
+		}
+		if err := validateWorkers(where, app.Workers); err != nil {
 			return err
 		}
 	}
@@ -222,6 +225,34 @@ func validateEnvVars(where string, vars []EnvVar) error {
 		}
 	}
 	return nil
+}
+
+func validateWorkers(where string, w *Workers) error {
+	if w == nil {
+		return nil
+	}
+	if w.AccountID == "" {
+		return fmt.Errorf("%s: workers.accountId is required", where)
+	}
+	if w.Script == "" {
+		return fmt.Errorf("%s: workers.script is required", where)
+	}
+	if len(w.Routes) > 0 && w.ZoneID == "" {
+		return fmt.Errorf(
+			"%s: workers.routes needs workers.zoneId — routes live on a zone, not on the script", where)
+	}
+	for i, r := range w.Routes {
+		if r == "" {
+			return fmt.Errorf("%s: workers.routes[%d] is empty", where, i)
+		}
+		// A route with no host matches nothing and is silent about it.
+		if !strings.Contains(r, "/") && !strings.Contains(r, "*") {
+			return fmt.Errorf(
+				"%s: workers.routes[%d] %q is not a route pattern; it should look like example.com/api/*",
+				where, i, r)
+		}
+	}
+	return validateEnvVars(where+" workers.secrets", w.Secrets)
 }
 
 func validateFly(where string, f *Fly) error {

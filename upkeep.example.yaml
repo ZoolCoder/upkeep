@@ -54,6 +54,24 @@ apps:
     #     - key: SOME_SECRET_KEY
     #       valueEnv: SOME_SECRET_KEY
 
+    # Or a backend that is a Worker rather than a container. upkeep manages the
+    # two things about one that break quietly: a secret the script expects and
+    # the account does not have, and a route it should answer on and does not.
+    #
+    # The script itself is not managed — uploading a Worker is `wrangler
+    # deploy`, and reimplementing that to own one more field would be a worse
+    # tool, not a more complete one.
+    #
+    # workers:
+    #   accountId: ${CLOUDFLARE_ACCOUNT_ID}
+    #   script: my-api
+    #   zoneId: 0000000000000000000000000000000000   # only needed for routes
+    #   secrets:
+    #     - key: SOME_SECRET_KEY
+    #       valueEnv: SOME_SECRET_KEY
+    #   routes:
+    #     - example.com/api/*
+
     r2:
       accountId: ${CLOUDFLARE_ACCOUNT_ID}
       bucket: my-bucket
