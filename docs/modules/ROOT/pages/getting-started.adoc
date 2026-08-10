@@ -1,0 +1,109 @@
+= Getting started
+
+Fifteen minutes, against an app you already have. Nothing here changes anything
+until the last step, and that step tells you what it is about to do.
+
+== 1. Install
+
+[source,console]
+----
+$ go install github.com/zoolcoder/upkeep/cmd/upkeep@latest
+$ upkeep version
+----
+
+== 2. Check your credentials
+
+`upkeep` borrows the sessions your provider CLIs already stored, so if these
+work, it works:
+
+[source,console]
+----
+$ render whoami        # or export RENDER_API_KEY
+$ wrangler whoami      # or export CLOUDFLARE_API_TOKEN
+$ neonctl me           # or export NEON_API_KEY
+----
+
+A missing one is not fatal. That surface is *reported* rather than skipped, so
+you can start with the half you have.
+
+== 3. Read your config off the account
+
+Do not write one by hand — that is how a config ends up describing an app that
+does not exist.
+
+[source,console]
+----
+$ { echo "version: 1"; echo "apps:"; \
+    upkeep import -name my-app \
+      -render srv-… \
+      -account <cloudflare-account-id> \
+      -bucket my-bucket \
+      -pages my-app; } > upkeep.yaml
+----
+
+Open it. Every variable whose name looks like a credential came back as a
+`valueEnv` reference with no value — `upkeep` will not copy a live secret into a
+file. See xref:security.adoc[].
+
+== 4. See what differs
+
+[source,console]
+----
+$ upkeep plan
+----
+
+On a first run against a working app this is usually short, and what it *does*
+show is worth reading: those are the things that are true of your infrastructure
+and not written down anywhere.
+
+Nothing has changed yet.
+
+== 5. Ask what is live
+
+A different question, and often the more useful one on day one:
+
+[source,console]
+----
+$ upkeep status
+
+my-app
+  render  srv-…      15 variable(s), 3 not set: FEE_ACCOUNT_INFO R2_ACCESS_KEY_ID …
+  r2      my-bucket  public, 1 CORS rule(s)
+  pages   my-app     branch main, 1 domain(s), last deploy 800cb5db success
+----
+
+The `not set` list is the one thing a dashboard will not tell you: which of the
+variables this app *declares* are absent from the service.
+
+== 6. Apply, when you are ready
+
+Review a plan and apply exactly that, rather than whatever is true a minute
+later:
+
+[source,console]
+----
+$ upkeep plan -out reviewed.json
+$ upkeep apply reviewed.json
+----
+
+`apply` re-reads afterwards and fails if a change is not actually in place. A
+provider returning `200` is not evidence.
+
+== 7. Put it in CI
+
+[source,console]
+----
+$ upkeep validate                 # offline, no credentials — a pre-commit hook
+$ upkeep plan -exit-code -json    # 2 = changes, 3 = only manual items left
+$ upkeep report                   # a scheduled run's summary
+----
+
+Use exit code 3 to decide whether a nightly job should shout. Something no tool
+can do is not a build failure, and a gate that fails forever on one is a gate
+people turn off.
+
+== Where to next
+
+* xref:configuration.adoc[] — the full config shape and what it refuses
+* xref:commands.adoc[] — every command and flag
+* xref:security.adoc[] — where values come from, and the threat model

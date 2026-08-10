@@ -1,0 +1,48 @@
+= Fly.io
+
+A backend running on Fly. An alternative to xref:surfaces/render.adoc[Render] —
+declare one or the other.
+
+[source,yaml]
+----
+fly:
+  app: my-app
+  secrets:
+    - key: SOME_SECRET_KEY
+      valueEnv: SOME_SECRET_KEY
+    - key: STRIPE_KEY
+      manual: true
+      why: minted in the Stripe dashboard
+----
+
+== What it can and cannot tell you
+
+This is the difference that matters, and it is the provider's, not a gap here.
+
+Fly calls them *secrets*, and the API never returns a value — only a name and a
+digest. So `upkeep`:
+
+* **can** tell you a secret is missing, and set it
+* **cannot** tell you an existing secret's value is wrong
+
+An existing secret is therefore passed over in *silence*. Reporting it as
+matching would claim a comparison that never happened, and a test pins exactly
+that: a secret that exists, whose local value is entirely different, still plans
+nothing.
+
+[NOTE]
+====
+If you need to know that a Fly secret holds the right value, rotate it: set it
+again from the source of truth. `upkeep` will not tell you whether that was
+necessary.
+====
+
+== Credentials
+
+`FLY_API_TOKEN`, or the session `fly auth login` stored in `~/.fly/config.yml`.
+
+== Status
+
+Written and tested against a fake, and never yet run against a real Fly account.
+The https://github.com/ZoolCoder/upkeep/blob/main/ROADMAP.md[roadmap] says so rather than implying
+otherwise.

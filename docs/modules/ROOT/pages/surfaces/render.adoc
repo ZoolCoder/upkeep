@@ -1,0 +1,58 @@
+= Render
+
+A backend running as a container on Render: its environment, and the deploys
+that restart it.
+
+[source,yaml]
+----
+render:
+  serviceId: srv-000000000000000000
+  image: ghcr.io/example/my-app:latest
+  env:
+    - key: APP_ENV
+      value: production
+    - key: DATABASE_URL
+      valueEnv: DATABASE_URL
+    - key: FEE_ACCOUNT_INFO
+      manual: true
+      why: real bank details, set by hand on the service
+----
+
+== What it reconciles
+
+Only the variables the config names. A Render service carries variables its own
+platform set, and a variable this file does not mention is left exactly as it
+is — see xref:comparison.adoc[the comparison] for why that is deliberate.
+
+Render returns a variable's *value*, which is what lets `upkeep` say one
+*differs from the config* rather than merely that it is missing. The other
+hosting provider cannot do that, and says so instead of pretending.
+
+Variables are written one at a time. Render also offers a whole-environment PUT
+and `upkeep` does not use it: one wrong call there wipes the variables the
+platform set itself, and a tool that can silently delete `DATABASE_URL` is not
+one to trust with a production service.
+
+== Deploys
+
+`apply -deploy` ships the configured image and *waits for it*.
+
+Triggering is not deploying. Render accepts the request and returns an id long
+before it knows whether the image builds, so a tool that stopped there would
+report a successful deploy of code that never started.
+
+[source,console]
+----
+$ upkeep apply -deploy -image ghcr.io/example/my-app:abc123
+----
+
+`-image` overrides the config, so a build pipeline deploys exactly the tag it
+just pushed rather than whatever `:latest` points at by the time the deploy runs.
+
+A deploy still building when the wait runs out is reported as *unfinished*, not
+as failed — it may yet succeed, and saying which beats guessing on your behalf.
+
+== Credentials
+
+`RENDER_API_KEY`, or the session `render login` already stored in
+`~/.render/cli.yaml`. See xref:install.adoc[].

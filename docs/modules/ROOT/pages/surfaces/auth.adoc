@@ -1,0 +1,52 @@
+= Authentication
+
+The one surface that checks variables against *each other* rather than against a
+provider — because that is where authentication actually fails. Not a missing
+value, but two values that disagree, and nothing notices until somebody tries to
+sign in.
+
+[source,yaml]
+----
+auth:
+  frontendProvider: local
+  frontendAuthUrl: https://api.example.com/auth
+  siteOrigins:
+    - https://my-app.example.com
+----
+
+It reads the service's environment, so it needs a
+xref:surfaces/render.adoc[render] block to read from.
+
+== It changes nothing
+
+Every finding is `MANUAL`, and there is a test asserting none of them carries an
+executable action. Authentication is the one surface where a wrong automatic fix
+locks out everybody, including whoever ran the tool.
+
+== What it asserts
+
+The two halves name the same provider:: The frontend's provider is baked into
+its bundle and cannot be read back from anywhere, so declaring it is the only
+way to check. `local` needs `AUTH_PROVIDER=local`; `neon`, `oidc` and `supabase`
+need `remote`.
+
+`AUTH_PROVIDER` is set at all:: Unset means it is inferred from older variables,
+and an inferred provider is quietly a different one.
+
+The JWKS actually serves keys:: The URL is *fetched*. A URL being set is not
+evidence it resolves, and the usual failure is a host that answers every unknown
+path with a page — which is a `200` that is not JSON.
+
+The issuer serves this app's own keys:: When the app signs its own tokens, it
+also serves them, so the issuer is verified by asking it for them rather than by
+comparing strings.
+
+The session endpoint answers JSON:: A `404` there is read by the client as *no
+session*, so every sign-in appears to succeed and then not to have happened.
+
+`CORS_ORIGINS` contains every site origin:: Matched exactly, so a hostname that
+is nearly right is entirely wrong: the site loads and every API call fails
+showing nothing.
+
+`AUTH_DEV_BYPASS` is not true in production:: Every request is whoever it claims
+to be.

@@ -1,0 +1,35 @@
+= Cloudflare Pages
+
+The static site in front of the app.
+
+[source,yaml]
+----
+pages:
+  accountId: ${CLOUDFLARE_ACCOUNT_ID}
+  project: my-app
+  productionBranch: main
+  domains: [my-app.pages.dev]
+----
+
+== Production branch
+
+Not cosmetic. A preview deployment is served on a *different origin*, and both
+an R2 CORS rule and a backend's allowlist match an origin exactly — so a site
+built from the wrong branch loads and every API call fails, showing nothing.
+
+== Domains
+
+Reported, never changed. A hostname has traffic pointed at it, and attaching one
+needs a DNS record `upkeep` is not going to create on your behalf.
+
+* A domain declared here that is not attached becomes a `MANUAL` line.
+* A domain attached that this config does not list is reported and left exactly
+  as it is.
+
+== What is not managed
+
+Uploading a build. That is `wrangler pages deploy`, and it is
+https://github.com/ZoolCoder/upkeep/blob/main/ROADMAP.md[on the roadmap] only conditionally: closing
+it means implementing Cloudflare's direct-upload protocol — hashing every asset,
+negotiating a manifest, uploading the missing ones — which `wrangler` already
+does well.

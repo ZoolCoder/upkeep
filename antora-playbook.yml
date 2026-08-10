@@ -3,6 +3,9 @@
 site:
   title: upkeep
   start_page: upkeep::index.adoc
+  # Absolute, so the sitemap and any canonical link point at the published site
+  # rather than at whatever host happened to build it.
+  url: https://zoolcoder.github.io/upkeep
 content:
   sources:
     - url: .
