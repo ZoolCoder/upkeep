@@ -43,6 +43,13 @@ type Cloud struct {
 	PagesProj  map[string]json.RawMessage
 	NeonBranch map[string][]string
 
+	// FlySecrets are the names a Fly app has. Fly never returns a value, and
+	// neither does this.
+	FlySecrets map[string]bool
+	// WorkerSecrets and WorkerRoutes, likewise by name and pattern.
+	WorkerSecrets map[string]bool
+	WorkerRoutes  map[string]string // pattern → script
+
 	// Requests is every path the tool asked for, in order, so a test can assert
 	// what it did NOT do as well as what it did.
 	Requests []string
@@ -51,12 +58,15 @@ type Cloud struct {
 // New starts a fake cloud with nothing configured in it.
 func New() *Cloud {
 	c := &Cloud{
-		Env:        map[string]map[string]string{},
-		Buckets:    map[string]bool{},
-		PublicR2:   map[string]bool{},
-		CORS:       map[string]json.RawMessage{},
-		PagesProj:  map[string]json.RawMessage{},
-		NeonBranch: map[string][]string{},
+		Env:           map[string]map[string]string{},
+		Buckets:       map[string]bool{},
+		PublicR2:      map[string]bool{},
+		CORS:          map[string]json.RawMessage{},
+		PagesProj:     map[string]json.RawMessage{},
+		NeonBranch:    map[string][]string{},
+		FlySecrets:    map[string]bool{},
+		WorkerSecrets: map[string]bool{},
+		WorkerRoutes:  map[string]string{},
 	}
 	c.server = httptest.NewServer(http.HandlerFunc(c.route))
 	return c
@@ -69,6 +79,8 @@ func (c *Cloud) URL() string { return c.server.URL }
 // a test's environment.
 func (c *Cloud) Environ() map[string]string {
 	return map[string]string{
+		"FLY_API_URL":          c.URL(),
+		"FLY_API_TOKEN":        "fake",
 		"RENDER_API_URL":       c.URL(),
 		"CLOUDFLARE_API_URL":   c.URL(),
 		"NEON_API_URL":         c.URL(),
@@ -104,6 +116,10 @@ func (c *Cloud) route(w http.ResponseWriter, r *http.Request) {
 		c.cloudflare(w, r)
 	case strings.HasPrefix(r.URL.Path, "/projects/"):
 		c.neon(w, r)
+	case strings.HasPrefix(r.URL.Path, "/apps/"):
+		c.fly(w, r)
+	case strings.HasPrefix(r.URL.Path, "/zones/"):
+		c.zone(w, r)
 	default:
 		http.NotFound(w, r)
 	}
@@ -162,6 +178,71 @@ func (c *Cloud) render(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// --- Fly: plain JSON, and never a secret's value ---
+
+func (c *Cloud) fly(w http.ResponseWriter, r *http.Request) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+
+	switch {
+	case len(parts) == 3 && parts[2] == "secrets" && r.Method == http.MethodGet:
+		var out []map[string]string
+		for name := range c.FlySecrets {
+			out = append(out, map[string]string{
+				"label": name, "type": "env", "digest": "sha256:whatever",
+			})
+		}
+		writeJSON(w, 200, out)
+
+	case len(parts) >= 4 && parts[2] == "secrets" && r.Method == http.MethodPost:
+		if !c.DeafWrites {
+			c.FlySecrets[parts[3]] = true
+		}
+		writeJSON(w, 200, map[string]string{})
+
+	case len(parts) == 2 && r.Method == http.MethodGet:
+		writeJSON(w, 200, map[string]string{"name": parts[1], "status": "deployed"})
+
+	default:
+		writeJSON(w, 404, map[string]string{"error": "no route for " + r.URL.Path})
+	}
+}
+
+// --- Cloudflare zones: worker routes ---
+
+func (c *Cloud) zone(w http.ResponseWriter, r *http.Request) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !strings.Contains(r.URL.Path, "/workers/routes") {
+		cfError(w, 404, 7003, "no route for "+r.URL.Path)
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		out := []map[string]string{}
+		for pattern, script := range c.WorkerRoutes {
+			out = append(out, map[string]string{
+				"id": "route-" + pattern, "pattern": pattern, "script": script,
+			})
+		}
+		cfOK(w, out)
+	case http.MethodPost, http.MethodPut:
+		var body struct {
+			Pattern string `json:"pattern"`
+			Script  string `json:"script"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if !c.DeafWrites {
+			c.WorkerRoutes[body.Pattern] = body.Script
+		}
+		cfOK(w, map[string]string{})
+	default:
+		cfError(w, 405, 7003, "method not allowed")
+	}
+}
+
 // --- Cloudflare: the success/result envelope ---
 
 func (c *Cloud) cloudflare(w http.ResponseWriter, r *http.Request) {
@@ -215,6 +296,24 @@ func (c *Cloud) cloudflare(w http.ResponseWriter, r *http.Request) {
 			c.Buckets[body.Name] = true
 		}
 		cfOK(w, map[string]string{"name": body.Name})
+
+	case strings.Contains(path, "/workers/scripts/") && strings.HasSuffix(path, "/secrets"):
+		if r.Method == http.MethodPut {
+			var body struct {
+				Name string `json:"name"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if !c.DeafWrites {
+				c.WorkerSecrets[body.Name] = true
+			}
+			cfOK(w, map[string]string{})
+			return
+		}
+		out := []map[string]string{}
+		for name := range c.WorkerSecrets {
+			out = append(out, map[string]string{"name": name, "type": "secret_text"})
+		}
+		cfOK(w, out)
 
 	case strings.Contains(path, "/pages/projects/"):
 		name := path[strings.Index(path, "/pages/projects/")+len("/pages/projects/"):]
