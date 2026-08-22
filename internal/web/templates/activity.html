@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Activity · upkeep</title>
+{{template "head" .}}
+<style>
+  td.when { white-space:nowrap; color:var(--text-faint); font-variant-numeric:tabular-nums }
+  td.target a { color:var(--text) } td.target a:hover { color:var(--teal); text-decoration:none }
+  td.detail { white-space:normal; overflow-wrap:anywhere }
+</style>
+</head>
+<body>
+{{template "shell-open" .}}
+<div class="page-head">
+  <div>
+    <h1>Activity</h1>
+    <div class="sub">Everything this page did — newest first, last {{.Limit}}. <span class="mono">{{.Path}}</span></div>
+  </div>
+  <div class="actions">
+    <button class="btn" type="button" id="csv">Export CSV</button>
+  </div>
+</div>
+
+<div class="filters">
+  <div class="chips" role="navigation" aria-label="kind">
+    <a class="fchip {{if not .Kind}}on{{end}}" href="/activity">All</a>
+    {{range .Kinds}}<a class="fchip {{if eq . $.Kind}}on{{end}}" href="/activity?kind={{.}}">{{.}}</a>{{end}}
+  </div>
+  <span class="sep"></span>
+  <div class="search"><input type="search" id="q" placeholder="Search detail, app…" aria-label="search activity"><kbd>/</kbd></div>
+</div>
+
+<div class="table-wrap">
+  <table class="table" id="activity">
+    <thead><tr><th>When</th><th>Kind</th><th>App</th><th>Detail</th></tr></thead>
+    <tbody>
+    {{range .Rows}}
+      <tr data-search="{{.Search}}">
+        <td class="when">{{.When}}</td>
+        <td>{{if .OK}}<span class="chip on plain">{{.Kind}}</span>{{else}}<span class="chip bad plain">{{.Kind}} ✕</span>{{end}}</td>
+        <td class="target">{{if .Target}}<a href="/apps/{{.Target}}">{{.Target}}</a>{{else}}<span class="faint">—</span>{{end}}</td>
+        <td class="detail">{{.Detail}}</td>
+      </tr>
+    {{else}}
+      <tr><td colspan="4" class="empty">{{if .Kind}}nothing recorded for this filter — <a href="/activity">show everything</a>{{else}}nothing recorded yet — plan an app from the <a href="/">dashboard</a> and it lands here{{end}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</div>
+<div class="pager" id="pager"></div>
+{{template "shell-close" .}}
+{{template "table-tools" .}}
+<script>
+(function () {
+  var t = zcTable({ table: '#activity', search: '#q', perPage: 50, pager: '#pager' });
+  document.getElementById('csv').addEventListener('click', function () {
+    var vis = t.visible();
+    zcCSV('#activity', 'upkeep-activity.csv', function (r) { return vis.indexOf(r) >= 0; });
+  });
+})();
+</script>
+</body>
+</html>

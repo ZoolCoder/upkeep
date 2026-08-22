@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Apps · upkeep</title>
+{{template "head" .}}
+<style>
+  td.surf { white-space:normal }
+  td.surf .chip { margin-right:.25rem }
+  td.sum .chip { margin-right:.25rem }
+</style>
+</head>
+<body>
+{{template "shell-open" .}}
+<div class="page-head">
+  <div><h1>Apps</h1><div class="sub">every app in the config, with the last plan this session ran for it</div></div>
+  <div class="actions">
+    <form method="post" action="/plan"><input type="hidden" name="return_to" value="/apps"><button class="btn primary" type="submit">Plan all</button></form>
+  </div>
+</div>
+
+{{if .ConfigErr}}<div class="flash err">✕ config: {{.ConfigErr}}</div>{{end}}
+
+<div class="filters">
+  <div class="search"><input type="search" id="q" placeholder="Search apps…" aria-label="search apps"><kbd>/</kbd></div>
+  <span class="faint" style="font-size:12.5px"><span id="shown">{{len .Apps}}</span> shown</span>
+</div>
+
+<div class="table-wrap">
+  <table class="table" id="apps">
+    <thead><tr><th class="sortable" data-sort="name">App</th><th>Surfaces</th><th>Last plan</th><th>Planned</th><th></th></tr></thead>
+    <tbody>
+    {{range .Apps}}
+      <tr data-search="{{lower .Name}}" data-name="{{.Name}}">
+        <td><a class="name" href="/apps/{{.Name}}">{{.Name}}</a></td>
+        <td class="surf">{{range .Surfaces}}<span class="chip plain">{{.}}</span>{{end}}</td>
+        <td class="sum">
+          {{if .Err}}<span class="chip bad">plan failed</span>
+          {{else if .Planned}}{{if .Counts.Create}}<span class="chip on">{{.Counts.Create}} CREATE</span>{{end}}{{if .Counts.Update}}<span class="chip warn">{{.Counts.Update}} UPDATE</span>{{end}}{{if .Counts.Delete}}<span class="chip bad">{{.Counts.Delete}} DELETE</span>{{end}}{{if .Counts.Manual}}<span class="chip violet">{{.Counts.Manual}} MANUAL</span>{{end}}{{if eq .Summary "matches the config"}}<span class="chip on">matches the config</span>{{end}}
+          {{else}}<span class="faint">—</span>{{end}}
+        </td>
+        <td class="faint">{{if .Planned}}{{.Planned}}{{else}}never{{end}}</td>
+        <td class="act"><form class="inline" method="post" action="/apps/{{.Name}}/plan"><input type="hidden" name="return_to" value="/apps"><button class="btn sm" type="submit">Plan</button></form></td>
+      </tr>
+    {{else}}
+      <tr><td colspan="5" class="empty">no apps in the config — <span class="mono">upkeep import</span> writes one from live state</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</div>
+{{template "shell-close" .}}
+{{template "table-tools" .}}
+<script>zcTable({ table: '#apps', search: '#q', shown: '#shown' });</script>
+</body>
+</html>

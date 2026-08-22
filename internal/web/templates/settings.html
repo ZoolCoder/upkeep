@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Settings · upkeep</title>
+{{template "head" .}}
+<style>
+  .form { display:grid; gap:.9rem; max-width:34rem }
+  .form label { display:grid; gap:.3rem; font-size:13px; color:var(--text-soft); font-weight:500 }
+  .form label .h { font-size:12px; color:var(--text-faint); font-weight:400 }
+  .form input[type=password] { width:100% }
+  .form .row { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center }
+  .kv { display:grid; grid-template-columns:minmax(7rem, 9rem) 1fr; gap:.55rem .8rem; font-size:13.5px; margin:0 }
+  .kv dt { color:var(--text-faint) }
+  .kv dd { margin:0; min-width:0; display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; overflow-wrap:anywhere }
+  .kv .src { font-family:var(--font-mono); font-size:12px }
+  .how { display:grid; gap:.55rem; font-size:13px; color:var(--text-soft); margin:0; padding-left:1.1rem }
+  .how li::marker { color:var(--text-faint) }
+  .how code { font-family:var(--font-mono); font-size:12px; color:var(--text); background:var(--glass-2); padding:.05rem .35rem; border-radius:3px }
+</style>
+</head>
+<body>
+{{template "shell-open" .}}
+<div class="page-head">
+  <div><h1>Settings</h1><div class="sub">the password lives here; everything else is decided on the command line</div></div>
+</div>
+
+<div class="grid cols-2">
+  <section class="card pad">
+    <h2>Credentials <span class="n">presence only — a value is never shown</span></h2>
+    <dl class="kv">
+      {{range .Credentials}}<dt>{{.Provider}}</dt><dd>{{if .Present}}<span class="chip on">present</span>{{else}}<span class="chip bad">missing</span>{{end}}{{if .Source}}<span class="src faint">{{.Source}}</span>{{end}}</dd>{{end}}
+    </dl>
+  </section>
+
+  <section class="card pad">
+    <h2>Files</h2>
+    <dl class="kv">
+      <dt>Config</dt><dd class="mono">{{.ConfigPath}}</dd>
+      <dt>Password</dt><dd class="mono">{{.AuthFile}}</dd>
+      <dt>Activity</dt><dd class="mono">{{.ActivityFile}}</dd>
+    </dl>
+  </section>
+
+  <section class="card pad">
+    <h2>Password</h2>
+    <form class="form" method="post" action="/settings/password" autocomplete="off">
+      <input type="hidden" name="return_to" value="/settings">
+      <label>Current password<input type="password" name="current" autocomplete="current-password" required></label>
+      <label>New password<input type="password" name="password" autocomplete="new-password" minlength="8" required><span class="h">at least 8 characters, and not the current one</span></label>
+      <label>New password again<input type="password" name="confirm" autocomplete="new-password" minlength="8" required></label>
+      <div class="row"><button class="btn primary" type="submit">Change password</button><span class="faint" style="font-size:12.5px">other browsers stay signed in until the server restarts</span></div>
+    </form>
+  </section>
+
+  <section class="card pad">
+    <h2>How this works</h2>
+    <ul class="how">
+      <li>upkeep keeps no database. The providers are the state; the only thing this page remembers is the last plan it ran per app, and that is gone when the server stops.</li>
+      <li>The config is re-read on every request, so an edit to <code>{{.ConfigPath}}</code> shows without a restart.</li>
+      <li>Credentials come from the environment or the provider's own CLI session, the same as the terminal: <code>RENDER_API_KEY</code> or <code>render login</code>, <code>CLOUDFLARE_API_TOKEN</code> or <code>wrangler login</code>, <code>NEON_API_KEY</code> or <code>neonctl auth</code>, <code>FLY_API_TOKEN</code> or <code>fly auth login</code>.</li>
+      <li>The password hash and the activity log live under <code>~/.local/share/upkeep</code> by default (<code>$XDG_DATA_HOME</code> honoured), or wherever <code>-data</code> points.</li>
+      <li>Sessions live in memory: a server restart signs every browser out.</li>
+    </ul>
+  </section>
+</div>
+{{template "shell-close" .}}
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>{{.Name}} · upkeep</title>
+{{template "head" .}}
+<style>
+  .crumb { font-size:13px; color:var(--text-faint); margin-bottom:.3rem }
+  .surf { display:flex; flex-wrap:wrap; gap:.3rem }
+  .kv { display:grid; grid-template-columns:minmax(5rem, 7rem) minmax(8rem, 14rem) 1fr; gap:.45rem .8rem; font-size:13.5px; margin:0 }
+  .kv dt { color:var(--text-faint) }
+  .kv dd { margin:0; min-width:0; overflow-wrap:anywhere }
+  td.op { width:1% }
+  td.detail { white-space:normal; overflow-wrap:anywhere; color:var(--text-soft) }
+  td.res, td.target { font-family:var(--font-mono); font-size:12.5px; white-space:nowrap }
+  .form { display:grid; gap:.7rem; max-width:34rem }
+  .form label { display:grid; gap:.3rem; font-size:13px; color:var(--text-soft); font-weight:500 }
+  .form label .h { font-size:12px; color:var(--text-faint); font-weight:400 }
+  .form input[type=text] { width:100% }
+  .form .row { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center }
+  .form .check { display:flex; flex-direction:row; align-items:center; gap:.45rem }
+  pre.out { margin:0; padding:.8rem .9rem; font:12.5px/1.5 var(--font-mono); color:var(--text-soft); background:var(--ink-2); border:1px solid var(--line); border-radius:var(--radius); overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere }
+  .verdict { display:flex; gap:.6rem; align-items:center; margin-bottom:.7rem; font-size:13.5px }
+</style>
+</head>
+<body>
+{{template "shell-open" .}}
+<div class="crumb"><a href="/apps">Apps</a> / {{.Name}}</div>
+<div class="page-head">
+  <div><h1>{{.Name}}</h1><div class="sub surf">{{range .Surfaces}}<span class="chip plain">{{.}}</span>{{end}}</div></div>
+  <div class="actions">
+    <form method="post" action="/apps/{{.Name}}/plan"><input type="hidden" name="return_to" value="/apps/{{.Name}}"><button class="btn primary" type="submit">Plan</button></form>
+  </div>
+</div>
+
+<div class="grid cols-2">
+  <section class="card pad">
+    <h2>Live status <span class="n">read just now, no diffing</span></h2>
+    {{if .Status}}<dl class="kv">
+      {{range .Status}}<dt>{{.Kind}}</dt><dd class="mono">{{.Target}}</dd><dd>{{if .Problem}}<span class="chip bad">unreadable</span> {{.Problem}}{{else}}{{.State}}{{end}}</dd>{{end}}
+    </dl>{{else}}<p class="empty">this app declares no surface status can read</p>{{end}}
+  </section>
+
+  <section class="card pad">
+    <h2>Apply <span class="n">runs exactly what the CLI runs, then re-reads</span></h2>
+    <form class="form" method="post" action="/apps/{{.Name}}/apply" autocomplete="off">
+      <input type="hidden" name="return_to" value="/apps/{{.Name}}">
+      <label>Type <strong>{{.Name}}</strong> to confirm
+        <input type="text" name="confirm" placeholder="{{.Name}}" required>
+        <span class="h">the apply makes every CREATE and UPDATE above, then re-reads the provider to check each one took; MANUAL items are left alone</span>
+      </label>
+      {{if .CanDeploy}}<label class="check"><input type="checkbox" name="deploy" value="1"> also trigger a Render deploy once the environment converges<span class="h">(<span class="mono">-deploy</span>; waits for it, as the CLI does)</span></label>{{end}}
+      <div class="row"><button class="btn danger" type="submit">Apply</button><span class="faint" style="font-size:12.5px">re-plans first, so it applies the world as it is now</span></div>
+    </form>
+  </section>
+</div>
+
+<section class="card pad" style="margin-top:1rem">
+  <h2>Plan <span class="n">{{if .HasRun}}{{if .Applied}}re-read after the apply{{else}}planned{{end}} {{.Planned}}{{else}}not planned yet in this session{{end}}</span></h2>
+  {{if .RunErr}}<div class="verdict"><span class="chip bad">{{if .Applied}}apply failed{{else}}plan failed{{end}}</span> <span>{{.RunErr}}</span></div>{{end}}
+  {{if .HasRun}}
+    {{if .Rows}}
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Kind</th><th>Resource</th><th>Target</th><th>Why</th></tr></thead>
+        <tbody>
+        {{range .Rows}}<tr><td class="op"><span class="chip {{opChip .Op}}">{{.Op}}</span></td><td class="res">{{.Resource}}</td><td class="target">{{.Target}}</td><td class="detail">{{.Detail}}</td></tr>{{end}}
+        </tbody>
+      </table>
+    </div>
+    {{if .Counts.Manual}}<p class="faint" style="font-size:12.5px;margin:.6rem 0 0">{{.Counts.Manual}} of these cannot be automated and are yours to do.</p>{{end}}
+    {{else if not .RunErr}}<p class="empty">no changes: everything matches the config</p>{{end}}
+  {{else}}
+    <p class="empty">press <strong>Plan</strong> to read the live state and list what differs</p>
+  {{end}}
+</section>
+
+{{if .Output}}
+<section class="card pad" style="margin-top:1rem">
+  <h2>Last apply <span class="n">{{.Planned}} · what ran, and what the re-read found</span></h2>
+  <pre class="out">{{.Output}}</pre>
+</section>
+{{end}}
+{{template "shell-close" .}}
+</body>
+</html>
