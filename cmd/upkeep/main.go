@@ -34,6 +34,7 @@ Usage:
   upkeep status   [flags]        what is live right now, without diffing
   upkeep validate [flags]        check the config offline, no network or credentials
   upkeep import   [flags]        print a config block from live state
+  upkeep serve    [flags]        the admin page, on loopback, behind a password
   upkeep version
 
 Exit codes:
@@ -51,6 +52,13 @@ Flags:
   -json            plan, status and report: machine-readable, same redaction rules
   -out string      plan only: save the plan, to apply exactly what you reviewed
   -image string    override the image a -deploy ships, e.g. the tag just built
+
+Serve flags:
+  -addr string     listen address (default "127.0.0.1:7778"); loopback only
+  -config string   config file, re-read on every request (default "upkeep.yaml")
+  -data string     directory for the password hash and activity log
+                   (default ~/.local/share/upkeep, or $XDG_DATA_HOME/upkeep)
+  -insecure        allow a non-loopback -addr; the page fronts your credentials
 
 Import flags (every surface is optional; it imports the ones you name):
   -name string     app name for the imported block (required)
@@ -117,6 +125,8 @@ func runCLI(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	case "help", "-h", "--help":
 		_, err := fmt.Fprint(stdout, usage)
 		return err
+	case "serve":
+		return runServe(args, stdout, stderr)
 	case "plan", "apply", "import", "validate", "status", "report":
 	default:
 		fmt.Fprint(stderr, usage)
