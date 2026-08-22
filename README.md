@@ -147,6 +147,26 @@ So CI can gate on drift:
 $ upkeep plan -exit-code -json > plan.json
 ```
 
+## Admin page
+
+The same commands behind a browser, for the days you would rather look than
+read a terminal:
+
+```console
+$ upkeep serve
+upkeep admin on http://127.0.0.1:7778 — Ctrl-C to stop
+```
+
+The first visit sets a password. The page lists every app in the config, runs
+`plan` on demand and shows the table — CREATE, UPDATE and MANUAL with the same
+reasons the CLI prints — and runs `apply` behind a typed confirmation, with the
+re-read afterwards shown as it happened. Nothing is stored but the password hash
+and an activity log under `~/.local/share/upkeep` (`-data` to move them); the
+providers remain the state, and the config is re-read on every request.
+
+It listens on loopback only. A non-loopback `-addr` is refused unless you pass
+`-insecure`, because the page fronts whatever credentials the terminal has.
+
 ## Documentation
 
 The full manual is at **https://zoolcoder.github.io/upkeep** — getting started,

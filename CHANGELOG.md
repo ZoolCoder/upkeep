@@ -4,6 +4,17 @@ Notable changes, newest first. Versions follow [semver](https://semver.org);
 before 1.0 a minor bump may change the config format, and any that does says so
 here with what to edit.
 
+## Unreleased
+
+### Commands
+
+**`serve`** — the admin page: `upkeep serve` puts plan, apply, status and the
+activity log behind a browser on loopback, guarded by a password set on the
+first visit. It runs exactly what the CLI runs — the same engine, the same
+providers, the same re-read after an apply — and keeps no state beyond the
+password hash and a JSONL activity log, because the providers are the state.
+Apply asks for the app's name typed back, in place of the terminal's prompt.
+
 ## 0.2.0
 
 ### Surfaces
